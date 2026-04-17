@@ -1,11 +1,10 @@
-
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
 
 :root {
     --cream: #eae4dc;
     --card-bg: #f4efe9;
     --ink: #1a1612;
-    --gold: #C9A84C;      
+    --gold: #C9A84C;
     --muted: #8a817c;
     --border: #e2dbd0;
 }
@@ -17,27 +16,27 @@
 }
 
 body {
-    background-color: var(--yg);
+    background-color: var(--border);
     font-family: 'DM Sans', sans-serif;
     color: var(--ink);
-    font-size: 30px;
+    font-size: 16px; /* CORRIGIDO: estava 30px, deixava tudo gigante */
 }
 
-
+/* ---- HEADER ---- */
 .header {
     background-color: var(--ink);
     padding: 0 32px;
     height: 56px;
     display: flex;
     align-items: center;
-    gap: 32px;            
+    gap: 32px;
 }
 
 .header h1 {
     color: var(--gold);
     font-family: 'DM Serif Display', serif;
     font-weight: 400;
-    font-size: 30px;
+    font-size: 24px;
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -55,10 +54,10 @@ body {
     padding: 6px 14px;
     border-radius: 999px;
     background: transparent;
-    border: none;       
+    border: none;
     color: var(--card-bg);
     text-decoration: none;
-    font-size: 18px;
+    font-size: 14px;
     transition: background 0.15s, color 0.15s;
 }
 
@@ -67,21 +66,22 @@ body {
     background: var(--gold);
 }
 
-
 .menu a span {
     background-color: var(--gold);
     color: var(--ink);
     padding: 1px 7px;
     border-radius: 999px;
-    font-size: 15px;
+    font-size: 12px;
     font-weight: 500;
     line-height: 1.6;
 }
-.menu a span:hover{
+
+.menu a:hover span {
     background: #000000;
     color: var(--card-bg);
 }
 
+/* ---- MAIN ---- */
 main {
     padding: 28px 40px;
 }
@@ -106,7 +106,9 @@ main {
     align-items: center;
 }
 
-#buscar {
+/* ---- BOTÕES DE PESQUISA ---- */
+#buscar,
+#adicionarModal {
     background-color: var(--ink);
     color: var(--gold);
     border: 1px solid var(--gold);
@@ -118,9 +120,15 @@ main {
     transition: background 0.2s, color 0.2s;
 }
 
-#buscar:hover {
+#buscar:hover,
+#adicionarModal:hover {
     background-color: var(--gold);
     color: var(--ink);
+    font-weight: bold;
+}
+
+#adicionarModal {
+    border: 2px solid var(--border);
     font-weight: bold;
 }
 
@@ -132,21 +140,27 @@ main {
     padding: 9px 22px;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
-    cursor:text;
+    cursor: text;
     transition: background 0.2s, color 0.2s;
-    
+    outline: none;
 }
-#buscador:hover {
+
+#buscador:hover,
+#buscador:focus {
     background-color: var(--gold);
     color: var(--ink);
-    font-weight: bold;
 }
-#buscador::placeholder{
+
+#buscador::placeholder {
     color: var(--gold);
 }
-#buscador:hover::placeholder{
+
+#buscador:hover::placeholder,
+#buscador:focus::placeholder {
     color: var(--ink);
 }
+
+/* ---- CARDS DE STATS ---- */
 .cards {
     display: flex;
     gap: 20px;
@@ -160,10 +174,11 @@ main {
     border-radius: 12px;
     min-width: 140px;
     border: 1px solid var(--border);
+    transition: transform 0.2s, background 0.2s;
 }
 
 .card .label {
-    font-size: 16px;
+    font-size: 11px;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--muted);
@@ -179,113 +194,71 @@ main {
 }
 
 .card span {
-    font-size: 16px;
+    font-size: 13px;
     color: var(--muted);
 }
 
-.card:hover{
-    transform: scale(1.1);
+.card:hover {
+    transform: scale(1.05);
     background-color: var(--muted);
 }
+
 .card:hover .label {
     color: var(--ink);
-}
-
-.card:hover h2 {
-    color: var(--gold);
 }
 
 .card:hover span {
     color: var(--ink);
 }
-#adicionarModal {
-    background-color: var(--ink);
-    color: var(--gold);
-    border: 2px solid var(--border);
-    border-radius: 20px;        /* igual ao #buscar */
-    padding: 9px 22px;          /* igual ao #buscar */
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-    width: auto;                
-    height: auto;             
-}
 
-#adicionarModal:hover {
-    background-color: var(--gold);
-    color: var(--ink);
-}
+/* ---- FILTROS ---- */
 .filtros {
     display: flex;
     gap: 4px;
-    flex: 1;
+    flex-wrap: wrap;
 }
 
-#categoria a {
-    display: flex;
+/* CORRIGIDO: era #categoria (id duplicado), agora é .categoria */
+.categoria a {
+    display: inline-flex;
     align-items: center;
-    padding: 25px;
-    margin: 25px;
+    padding: 6px 16px;
+    margin: 4px;
     border-radius: 999px;
-    background: var(--border);
-    border: none; 
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     color: var(--gold);
     text-decoration: none;
-    font-size: 20px;
+    font-size: 13px;
+    font-weight: 500;
     transition: background 0.15s, color 0.15s;
-    font-weight: bold;
 }
 
-#categoria a:hover {
+.categoria a:hover {
     color: var(--ink);
     background: var(--gold);
-    text-decoration: underline;
 }
 
-
+/* ---- FILMES ---- */
 .filmes {
     display: flex;
     flex-wrap: wrap;
-    gap: 30px;
-}
-.movie {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 250px;
-    position: relative;
-}
-.filmes img {
-    width: 250px;
-    height: 350px;
-    object-fit: cover;
-    border-radius: 25px;
-    margin-bottom: 10px;
+    gap: 20px;
 }
 
-.movie img:hover {
-    transform: scale(1.1);
-    transition: ease-in-out 2ms;
-    box-shadow: #000000;
-}
-
-.movie .nome {
-    color: var(--gold);
-    font-weight:lighter;
-    text-decoration:underline;
-    
-}
 .movie {
     background-color: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
-    width: 280px;
-    padding: 15px;
+    width: 200px;
+    padding: 10px;
     transition: transform 0.2s, box-shadow 0.2s;
     cursor: pointer;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .movie:hover {
@@ -297,86 +270,243 @@ main {
     width: 100%;
     aspect-ratio: 2/3;
     object-fit: cover;
+    border-radius: 8px;
     display: block;
 }
 
-.movie-info {
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.movie-info h3 {
+.movie .nome {
     font-family: 'DM Serif Display', serif;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--gold);
-    margin: 0;
+    text-decoration: underline;
 }
 
+.movie .diretor,
+.movie .genero {
+    font-size: 12px;
+    color: var(--muted);
+}
 
 .status {
     display: inline-block;
     background-color: var(--gold);
     color: var(--ink);
-    font-size: 20px;
+    font-size: 11px;
     font-weight: 500;
     padding: 2px 8px;
     border-radius: 999px;
-    align-self: flex-start;
-    margin-top: 4px;
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 14px;
+    right: 14px;
 }
 
+/* ---- MODAL ---- */
+
+/* CORRIGIDO: era display:none com classe .hidden no HTML;
+   agora o modal começa oculto via CSS e ativa com .active */
 #modal {
-    display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.6);
-
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    display: none;          /* oculto por padrão */
     align-items: center;
     justify-content: center;
-
     z-index: 9999;
 }
 
 #modal.active {
-    display: flex;
+    display: flex;          /* visível quando JS adiciona .active */
 }
 
 .modal-content {
     background: var(--card-bg);
     color: var(--ink);
-    padding: 30px;
-    border-radius: 16px;
+    padding: 28px;
+    border-radius: 20px;
     border: 1px solid var(--border);
-
-    width: 400px;
+    width: 420px;
     max-width: 90%;
-
+    max-height: 90vh;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    animation: fadeIn 0.25s ease;
 }
+
 .modal-content h2 {
     font-family: 'DM Serif Display', serif;
     color: var(--gold);
+    font-size: 22px;
 }
-.modal-content input,
-.modal-content select {
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
+
+.modal-content label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 500;
 }
+
+#infoExtra {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+#descricaoFilme {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+#notaGeral,
+#suaNota {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink);
+}
+
+.rating {
+    display: flex;
+    gap: 6px;
+}
+
 .rating span {
-    font-size: 24px;
+    font-size: 26px;
     color: var(--border);
     cursor: pointer;
     transition: 0.2s;
 }
 
+.rating span:hover,
 .rating span.active {
     color: var(--gold);
+    transform: scale(1.2);
+}
+
+.modal-content select {
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: white;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.modal-actions button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 999px;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+#salvar {
+    background: var(--gold);
+    color: var(--ink);
+}
+
+#salvar:hover {
+    transform: scale(1.05);
+}
+
+#fecharModal {
+    background: transparent;
+    border: 1px solid var(--border) !important;
+    color: var(--ink);
+}
+
+#fecharModal:hover {
+    background: var(--border);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---- LINK ATIVO NO MENU ---- */
+.menu a.ativo {
+    background: var(--gold);
+    color: var(--ink);
+    font-weight: 500;
+}
+
+.menu a.ativo span {
+    background: var(--ink);
+    color: var(--gold);
+}
+
+/* ---- BOTÃO REMOVER ---- */
+.btn-remover {
+    background: transparent !important;
+    border: 1px solid #c0392b !important;
+    color: #c0392b !important;
+}
+
+.btn-remover:hover {
+    background: #c0392b !important;
+    color: #fff !important;
+}
+
+/* ---- ESTADO VAZIO ---- */
+.vazio {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.vazio a {
+    color: var(--gold);
+    text-decoration: underline;
+    font-size: 14px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ---- TOAST ---- */
+#toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--ink);
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 10px 24px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 99999;
+}
+
+#toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineList — WatchList</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <h1>Cine<strong>List</strong></h1>
+        <nav class="menu">
+            <a href="index.html">Todos <span id="nav-todos">0</span></a>
+            <a href="assistidos.html">Assistidos <span id="nav-assistidos">0</span></a>
+            <a href="watchlist.html" class="ativo">WatchList <span id="nav-watchlist">0</span></a>
+            <a href="assistindo.html">Assistindo <span id="nav-assistindo">0</span></a>
+        </nav>
+    </header>
+
+    <main>
+        <div id="todos">
+            <h2>WatchList <span id="contador">0</span></h2>
+            <div id="pesquisa">
+                <input type="text" id="buscador" placeholder="Filtrar filmes...">
+            </div>
+        </div>
+
+        <div class="cards">
+            <div class="card">
+                <p class="label">Para assistir</p>
+                <h2 id="card-total">0</h2>
+                <span>filmes</span>
+            </div>
+            <div class="card">
+                <p class="label">Próximo da lista</p>
+                <h2 id="card-proximo" style="font-size:16px; padding-top:6px;">—</h2>
+                <span>&nbsp;</span>
+            </div>
+        </div>
+
+        <div class="filmes" id="lista-filmes"></div>
+
+        <div id="vazio" class="vazio hidden">
+            <p>Sua watchlist está vazia.</p>
+            <a href="todos.html">Adicionar filmes →</a>
+        </div>
+    </main>
+
+    <div id="modal">
+        <div class="modal-content">
+            <h2 id="tituloFilme"></h2>
+            <img id="posterDetalhe" style="width:100%; border-radius:10px;" alt="">
+            <p id="descricaoFilme"></p>
+            <p id="suaNota"></p>
+
+            <label>Alterar nota</label>
+            <div class="rating">
+                <span data-value="1">★</span>
+                <span data-value="2">★</span>
+                <span data-value="3">★</span>
+                <span data-value="4">★</span>
+                <span data-value="5">★</span>
+            </div>
+
+            <label>Categoria</label>
+            <select id="categoriaFilme">
+                <option value="Favorito">Favorito</option>
+                <option value="Assistido">Assistido</option>
+                <option value="Quero ver">Quero ver</option>
+                <option value="Assistindo">Assistindo</option>
+            </select>
+
+            <div class="modal-actions">
+                <button id="salvar">Salvar</button>
+                <button id="remover" class="btn-remover">Remover</button>
+                <button id="fecharModal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        inicializarPagina("Quero ver");
+
+        // card extra: próximo da lista
+        const filmes = JSON.parse(localStorage.getItem("filmes")) || [];
+        const proximo = filmes.find(f => f.categoria === "Quero ver");
+        if (proximo) {
+            document.getElementById("card-proximo").innerText = proximo.titulo;
+        }
+    </script>
+</body>
+</html>
