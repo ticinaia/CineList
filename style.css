@@ -1,0 +1,382 @@
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap');
+
+:root {
+    --cream: #eae4dc;
+    --card-bg: #f4efe9;
+    --ink: #1a1612;
+    --gold: #C9A84C;      
+    --muted: #8a817c;
+    --border: #e2dbd0;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--yg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    font-size: 30px;
+}
+
+
+.header {
+    background-color: var(--ink);
+    padding: 0 32px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 32px;            
+}
+
+.header h1 {
+    color: var(--gold);
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+    font-size: 30px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.menu {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+.menu a {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: transparent;
+    border: none;       
+    color: var(--card-bg);
+    text-decoration: none;
+    font-size: 18px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.menu a:hover {
+    color: var(--ink);
+    background: var(--gold);
+}
+
+
+.menu a span {
+    background-color: var(--gold);
+    color: var(--ink);
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.6;
+}
+.menu a span:hover{
+    background: #000000;
+    color: var(--card-bg);
+}
+
+main {
+    padding: 28px 40px;
+}
+
+#todos {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+#todos h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    font-weight: 400;
+    color: var(--muted);
+}
+
+#pesquisa {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#buscar {
+    background-color: var(--ink);
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 20px;
+    padding: 9px 22px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+#buscar:hover {
+    background-color: var(--gold);
+    color: var(--ink);
+    font-weight: bold;
+}
+
+#buscador {
+    background-color: var(--ink);
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 20px;
+    padding: 9px 22px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor:text;
+    transition: background 0.2s, color 0.2s;
+    
+}
+#buscador:hover {
+    background-color: var(--gold);
+    color: var(--ink);
+    font-weight: bold;
+}
+#buscador::placeholder{
+    color: var(--gold);
+}
+#buscador:hover::placeholder{
+    color: var(--ink);
+}
+.cards {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+}
+
+.card {
+    background-color: var(--card-bg);
+    padding: 16px 20px;
+    border-radius: 12px;
+    min-width: 140px;
+    border: 1px solid var(--border);
+}
+
+.card .label {
+    font-size: 16px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 6px;
+}
+
+.card h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 30px;
+    font-weight: 400;
+    color: var(--gold);
+    margin: 0 0 4px;
+}
+
+.card span {
+    font-size: 16px;
+    color: var(--muted);
+}
+
+.card:hover{
+    transform: scale(1.1);
+    background-color: var(--muted);
+}
+.card:hover .label {
+    color: var(--ink);
+}
+
+.card:hover h2 {
+    color: var(--gold);
+}
+
+.card:hover span {
+    color: var(--ink);
+}
+#adicionarModal {
+    background-color: var(--ink);
+    color: var(--gold);
+    border: 2px solid var(--border);
+    border-radius: 20px;        /* igual ao #buscar */
+    padding: 9px 22px;          /* igual ao #buscar */
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    width: auto;                
+    height: auto;             
+}
+
+#adicionarModal:hover {
+    background-color: var(--gold);
+    color: var(--ink);
+}
+.filtros {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+}
+
+#categoria a {
+    display: flex;
+    align-items: center;
+    padding: 25px;
+    margin: 25px;
+    border-radius: 999px;
+    background: var(--border);
+    border: none; 
+    color: var(--gold);
+    text-decoration: none;
+    font-size: 20px;
+    transition: background 0.15s, color 0.15s;
+    font-weight: bold;
+}
+
+#categoria a:hover {
+    color: var(--ink);
+    background: var(--gold);
+    text-decoration: underline;
+}
+
+
+.filmes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+}
+.movie {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 250px;
+    position: relative;
+}
+.filmes img {
+    width: 250px;
+    height: 350px;
+    object-fit: cover;
+    border-radius: 25px;
+    margin-bottom: 10px;
+}
+
+.movie img:hover {
+    transform: scale(1.1);
+    transition: ease-in-out 2ms;
+    box-shadow: #000000;
+}
+
+.movie .nome {
+    color: var(--gold);
+    font-weight:lighter;
+    text-decoration:underline;
+    
+}
+.movie {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    width: 280px;
+    padding: 15px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+}
+
+.movie:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+
+.movie img {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    display: block;
+}
+
+.movie-info {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.movie-info h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 12px;
+    color: var(--gold);
+    margin: 0;
+}
+
+
+.status {
+    display: inline-block;
+    background-color: var(--gold);
+    color: var(--ink);
+    font-size: 20px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+    align-self: flex-start;
+    margin-top: 4px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+#modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+}
+
+#modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    color: var(--ink);
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+
+    width: 400px;
+    max-width: 90%;
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.modal-content h2 {
+    font-family: 'DM Serif Display', serif;
+    color: var(--gold);
+}
+.modal-content input,
+.modal-content select {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+.rating span {
+    font-size: 24px;
+    color: var(--border);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.rating span.active {
+    color: var(--gold);
+}
