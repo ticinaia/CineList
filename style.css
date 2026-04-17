@@ -19,7 +19,7 @@ body {
     background-color: var(--border);
     font-family: 'DM Sans', sans-serif;
     color: var(--ink);
-    font-size: 16px; /* CORRIGIDO: estava 30px, deixava tudo gigante */
+    font-size: 16px;
 }
 
 /* ---- HEADER ---- */
@@ -218,7 +218,6 @@ main {
     flex-wrap: wrap;
 }
 
-/* CORRIGIDO: era #categoria (id duplicado), agora é .categoria */
 .categoria a {
     display: inline-flex;
     align-items: center;
@@ -301,22 +300,19 @@ main {
 }
 
 /* ---- MODAL ---- */
-
-/* CORRIGIDO: era display:none com classe .hidden no HTML;
-   agora o modal começa oculto via CSS e ativa com .active */
 #modal {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.65);
     backdrop-filter: blur(6px);
-    display: none;          /* oculto por padrão */
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 9999;
 }
 
 #modal.active {
-    display: flex;          /* visível quando JS adiciona .active */
+    display: flex;
 }
 
 .modal-content {
@@ -431,14 +427,8 @@ main {
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* ---- LINK ATIVO NO MENU ---- */
@@ -509,4 +499,203 @@ main {
 #toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+}
+
+/* ---- FILTRO ATIVO ---- */
+.categoria a.filtro-ativo {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--gold);
+    font-weight: 500;
+}
+
+/* nota do TMDB nos cards */
+.nota-tmdb {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* ======================================
+   NOVOS ESTILOS — SÉRIES
+   ====================================== */
+
+/* Toggle Filme / Série */
+.tipo-toggle {
+    display: flex;
+    background: var(--ink);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+    border: 1px solid var(--gold);
+}
+
+.toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--gold);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 5px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.toggle-btn.active {
+    background: var(--gold);
+    color: var(--ink);
+    font-weight: 500;
+}
+
+/* Badge tipo (Filme / Série) no card */
+.badge-tipo {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    letter-spacing: 0.4px;
+}
+
+.badge-filme {
+    background: rgba(201, 168, 76, 0.15);
+    color: var(--gold);
+    border: 1px solid var(--gold);
+}
+
+.badge-serie {
+    background: rgba(26, 22, 18, 0.75);
+    color: var(--card-bg);
+    border: 1px solid var(--card-bg);
+}
+
+/* Seção de séries no modal */
+#secao-series {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Abas de temporadas */
+.seasons-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.s-tab {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.s-tab:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.s-tab.active {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--gold);
+    font-weight: 500;
+}
+
+/* Lista de episódios */
+#episodios-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+#episodios-lista::-webkit-scrollbar {
+    width: 4px;
+}
+
+#episodios-lista::-webkit-scrollbar-track {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+#episodios-lista::-webkit-scrollbar-thumb {
+    background: var(--gold);
+    border-radius: 4px;
+}
+
+.ep-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    gap: 8px;
+}
+
+.ep-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ep-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold);
+    flex-shrink: 0;
+}
+
+.ep-nome {
+    font-size: 12px;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ep-stars {
+    display: flex;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.ep-star {
+    font-size: 14px;
+    color: var(--border);
+    cursor: pointer;
+    transition: color 0.15s, transform 0.1s;
+}
+
+.ep-star:hover,
+.ep-star.active {
+    color: var(--gold);
+}
+
+.ep-star:hover {
+    transform: scale(1.2);
+}
+
+/* ---- LOGO CLICÁVEL ---- */
+.logo-link {
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.logo-link:hover h1 {
+    opacity: 0.85;
+    transition: opacity 0.15s;
 }

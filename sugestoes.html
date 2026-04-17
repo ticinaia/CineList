@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineList — Sugestões</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header">
+        <a href="index.html" class="logo-link"><h1>Cine<strong>List</strong></h1></a>
+        <nav class="menu">
+            <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
+            <a href="series.html">Séries <span id="nav-count-series">0</span></a>
+            <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
+            <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
+            <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
+            <a href="sugestoes.html">Sugestões ✦</a>
+        </nav>
+    </header>
+
+    <main>
+        <div id="todos" style="margin-bottom: 24px;">
+            <h2>Sugestões para você</h2>
+            <div id="pesquisa" style="gap:8px;">
+                <button id="btn-filmes-sug" class="toggle-btn active" onclick="setTipoSug('filme')">Filmes</button>
+                <button id="btn-series-sug" class="toggle-btn" onclick="setTipoSug('serie')">Séries</button>
+            </div>
+        </div>
+
+        <div id="generos-favoritos" style="margin-bottom: 24px;"></div>
+
+        <div id="secao-sugestoes"></div>
+    </main>
+
+    <script src="nav-counts.js"></script>
+    <script src="sugestoes_script.js"></script>
+</body>
+</html>

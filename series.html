@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CineList</title>
+    <title>CineList — Séries</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -22,9 +22,9 @@
 
     <main>
         <div id="todos">
-            <h2>Todos os filmes <span id="contador">0</span></h2>
+            <h2>Minhas séries <span id="contador">0</span></h2>
             <div id="pesquisa">
-                <input type="text" id="buscador" placeholder="Buscar filmes...">
+                <input type="text" id="buscador" placeholder="Buscar séries...">
                 <button id="buscar">Buscar</button>
                 <button type="button" id="adicionarModal">Adicionar</button>
             </div>
@@ -34,12 +34,12 @@
             <div class="card">
                 <p class="label">Exibindo</p>
                 <h2>0</h2>
-                <span>filmes</span>
+                <span>séries</span>
             </div>
             <div class="card">
-                <p class="label">Assistidos</p>
+                <p class="label">Assistidas</p>
                 <h2>0</h2>
-                <span>filmes</span>
+                <span>séries</span>
             </div>
             <div class="card">
                 <p class="label">Média das avaliações:</p>
@@ -71,7 +71,7 @@
                 <span data-value="5">★</span>
             </div>
 
-            <div id="secao-series" style="display:none;">
+            <div id="secao-series">
                 <hr style="border-color:var(--border); margin: 4px 0;">
                 <label>Temporadas</label>
                 <div class="seasons-tabs" id="seasons-tabs"></div>
@@ -99,6 +99,6 @@
     </div>
 
     <script src="nav-counts.js"></script>
-    <script src="script.js"></script>
+    <script src="series_script.js"></script>
 </body>
 </html>

@@ -5,31 +5,24 @@ const abrirBtn = document.getElementById("adicionarModal");
 const fecharBtn = document.getElementById("fecharModal");
 const buscador = document.getElementById("buscador");
 
-let filmeSelecionado = null;
+let serieSelecionada = null;
 let filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
-let filmesAtuais = [];
+let seriesAtuais = [];
 let notaSelecionada = 0;
-const tipoAtivo = "filme";
 
-// Gêneros
 let mapaGeneros = {};
 let filtroGeneroAtivo = null;
 
-// Dados de temporadas do item atual no modal
-let temporadasModal = {}; // { numTemporada: { nota: N, episodios: [{numero, nota}] } }
+let temporadasModal = {};
 let temporadaAtiva = 1;
 let totalTemporadas = 0;
-
 
 
 // ---------------- GÊNEROS ----------------
 
 async function carregarGeneros() {
     try {
-        const endpoint = tipoAtivo === "filme"
-            ? `https://api.themoviedb.org/3/genre/movie/list?api_key=${API_KEY}&language=pt-BR`
-            : `https://api.themoviedb.org/3/genre/tv/list?api_key=${API_KEY}&language=pt-BR`;
-        const res = await fetch(endpoint);
+        const res = await fetch(`https://api.themoviedb.org/3/genre/tv/list?api_key=${API_KEY}&language=pt-BR`);
         const data = await res.json();
         mapaGeneros = {};
         data.genres.forEach(g => { mapaGeneros[g.id] = g.name; });
@@ -66,11 +59,7 @@ function ativarFiltros() {
             document.querySelectorAll(".filtros .categoria a").forEach(b => b.classList.remove("filtro-ativo"));
             botao.classList.add("filtro-ativo");
             const idStr = botao.dataset.id;
-            if (!idStr) {
-                filtroGeneroAtivo = null;
-                renderizarFilmes(filmesAtuais);
-                return;
-            }
+            if (!idStr) { filtroGeneroAtivo = null; renderizarSeries(seriesAtuais); return; }
             filtroGeneroAtivo = Number(idStr);
             aplicarFiltroGenero();
         });
@@ -78,31 +67,25 @@ function ativarFiltros() {
 }
 
 function aplicarFiltroGenero() {
-    if (!filtroGeneroAtivo) { renderizarFilmes(filmesAtuais); return; }
-    const campo = tipoAtivo === "filme" ? "genre_ids" : "genre_ids";
-    const filtrados = filmesAtuais.filter(f => Array.isArray(f.genre_ids) && f.genre_ids.includes(filtroGeneroAtivo));
-    renderizarFilmes(filtrados);
-    if (filtrados.length === 0) {
-        mostrarToast(`Nenhum resultado para "${mapaGeneros[filtroGeneroAtivo] || "esse gênero"}".`);
-    }
+    if (!filtroGeneroAtivo) { renderizarSeries(seriesAtuais); return; }
+    const filtradas = seriesAtuais.filter(s => Array.isArray(s.genre_ids) && s.genre_ids.includes(filtroGeneroAtivo));
+    renderizarSeries(filtradas);
+    if (filtradas.length === 0) mostrarToast(`Nenhum resultado para "${mapaGeneros[filtroGeneroAtivo] || "esse gênero"}".`);
 }
 
-// ---------------- MODAL ABRIR/FECHAR ----------------
+// ---------------- MODAL ----------------
 
 abrirBtn.addEventListener("click", () => {
-    filmeSelecionado = null;
+    serieSelecionada = null;
     limparModal();
     modal.classList.add("active");
 });
 
 fecharBtn.addEventListener("click", () => modal.classList.remove("active"));
-
-modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.classList.remove("active");
-});
+modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); });
 
 function limparModal() {
-    document.getElementById("tituloFilme").innerText = tipoAtivo === "filme" ? "Adicionar filme" : "Adicionar série";
+    document.getElementById("tituloFilme").innerText = "Adicionar série";
     document.getElementById("posterDetalhe").src = "";
     document.getElementById("descricaoFilme").innerText = "";
     document.getElementById("notaGeral").innerText = "";
@@ -112,8 +95,9 @@ function limparModal() {
     document.getElementById("watchlist").checked = false;
     notaSelecionada = 0;
     document.querySelectorAll(".rating span").forEach(s => s.classList.remove("active"));
-    const secaoSeries = document.getElementById("secao-series");
-    if (secaoSeries) secaoSeries.style.display = "none";
+    document.getElementById("seasons-tabs").innerHTML = "";
+    document.getElementById("episodios-lista").innerHTML = "";
+    document.getElementById("media-temporada").innerText = "";
     temporadasModal = {};
     temporadaAtiva = 1;
     totalTemporadas = 0;
@@ -122,118 +106,73 @@ function limparModal() {
 // ---------------- BUSCA ----------------
 
 let timeout;
-
 buscador.addEventListener("input", () => {
     clearTimeout(timeout);
-    timeout = setTimeout(() => buscarItens(buscador.value.trim()), 400);
+    timeout = setTimeout(() => buscarSeries(buscador.value.trim()), 400);
 });
+document.getElementById("buscar").addEventListener("click", () => buscarSeries(buscador.value.trim()));
 
-document.getElementById("buscar").addEventListener("click", () => {
-    buscarItens(buscador.value.trim());
-});
-
-async function buscarItens(query) {
+async function buscarSeries(query) {
     if (query.length < 3) return;
     try {
-        const endpoint = tipoAtivo === "filme"
-            ? `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`
-            : `https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`;
-        const res = await fetch(endpoint);
+        const res = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
         const data = await res.json();
-        filmesAtuais = data.results || [];
-        filtroGeneroAtivo ? aplicarFiltroGenero() : renderizarFilmes(filmesAtuais);
+        seriesAtuais = data.results || [];
+        filtroGeneroAtivo ? aplicarFiltroGenero() : renderizarSeries(seriesAtuais);
     } catch (err) {
-        console.error("Erro ao buscar:", err);
+        console.error("Erro ao buscar séries:", err);
         mostrarToast("Erro ao buscar. Verifique sua conexão.");
     }
 }
 
-// ---------------- RENDER CARDS ----------------
+// ---------------- RENDER ----------------
 
-function renderizarFilmes(lista) {
+function renderizarSeries(lista) {
     const container = document.querySelector(".filmes");
     container.innerHTML = "";
 
     if (lista.length === 0) {
-        container.innerHTML = `<p style="color:var(--muted); font-size:14px; padding:20px 0;">Nenhum resultado encontrado.</p>`;
+        container.innerHTML = `<p style="color:var(--muted); font-size:14px; padding:20px 0;">Nenhuma série encontrada.</p>`;
         atualizarContador();
         return;
     }
 
-    lista.forEach(item => {
-        const poster = item.poster_path
-            ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+    lista.forEach(serie => {
+        const poster = serie.poster_path
+            ? `https://image.tmdb.org/t/p/w500${serie.poster_path}`
             : "https://via.placeholder.com/250x350?text=Sem+Imagem";
 
-        const generosTexto = (item.genre_ids || [])
-            .slice(0, 2)
-            .map(id => mapaGeneros[id] || "")
-            .filter(Boolean)
-            .join(", ") || "—";
+        const generosTexto = (serie.genre_ids || []).slice(0, 2).map(id => mapaGeneros[id] || "").filter(Boolean).join(", ") || "—";
+        const titulo = serie.name || serie.title || "Sem título";
+        const ano = (serie.first_air_date || "").slice(0, 4) || "—";
 
-        const titulo = item.title || item.name || "Sem título";
-        const ano = (item.release_date || item.first_air_date || "").slice(0, 4) || "—";
-        const nota = item.vote_average?.toFixed(1) || "0";
-
-        const isFilme = tipoAtivo === "filme";
-        const salvo = filmesSalvos.find(f => f.id === item.id && f.tipo === (isFilme ? "filme" : "serie"));
+        const salvo = filmesSalvos.find(f => f.id === serie.id && f.tipo === "serie");
         const badgeStatus = salvo ? `<span class="status">${salvo.categoria}</span>` : "";
-        const badgeTipo = `<span class="badge-tipo ${isFilme ? 'badge-filme' : 'badge-serie'}">${isFilme ? 'Filme' : 'Série'}</span>`;
 
         const div = document.createElement("div");
         div.classList.add("movie");
         div.innerHTML = `
             <img src="${poster}" alt="${titulo}">
             ${badgeStatus}
-            ${badgeTipo}
+            <span class="badge-tipo badge-serie" style="top:38px;">Série</span>
             <div class="info">
                 <h3 class="nome">${titulo}</h3>
                 <span class="diretor">${ano}</span>
                 <span class="genero">${generosTexto}</span>
-                <span class="nota-tmdb">⭐ ${nota}</span>
+                <span class="nota-tmdb">⭐ ${serie.vote_average?.toFixed(1) || "0"}</span>
             </div>
         `;
-
-        div.addEventListener("click", () => isFilme ? abrirModalFilme(item) : abrirModalSerie(item));
+        div.addEventListener("click", () => abrirModalSerie(serie));
         container.appendChild(div);
     });
 
     atualizarContador();
 }
 
-// ---------------- MODAL FILME ----------------
-
-function abrirModalFilme(filme) {
-    filmeSelecionado = { ...filme, tipo: "filme" };
-    const secaoSeries = document.getElementById("secao-series");
-    if (secaoSeries) secaoSeries.style.display = "none";
-
-    const generosTexto = (filme.genre_ids || []).map(id => mapaGeneros[id] || "").filter(Boolean).join(", ");
-    document.getElementById("tituloFilme").innerText = filme.title;
-    document.getElementById("posterDetalhe").src = filme.poster_path
-        ? `https://image.tmdb.org/t/p/w500${filme.poster_path}`
-        : "https://via.placeholder.com/250x350?text=Sem+Imagem";
-    document.getElementById("descricaoFilme").innerText = filme.overview || "Sem descrição disponível";
-    document.getElementById("notaGeral").innerText = "⭐ Nota geral: " + (filme.vote_average?.toFixed(1) || "0");
-    document.getElementById("infoExtra").innerText = generosTexto ? "🎬 " + generosTexto : "";
-
-    const salvo = filmesSalvos.find(f => f.id === filme.id && f.tipo === "filme");
-    document.getElementById("suaNota").innerText = salvo?.nota ? "⭐ Sua nota: " + salvo.nota : "Você ainda não avaliou";
-    notaSelecionada = salvo?.nota || 0;
-    document.querySelectorAll(".rating span").forEach(s => {
-        s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
-    });
-    document.getElementById("watchlist").checked = salvo?.watchlist || false;
-    document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
-
-    ativarEstrelas();
-    modal.classList.add("active");
-}
-
 // ---------------- MODAL SÉRIE ----------------
 
 async function abrirModalSerie(serie) {
-    filmeSelecionado = { ...serie, tipo: "serie" };
+    serieSelecionada = serie;
     temporadasModal = {};
     temporadaAtiva = 1;
 
@@ -255,10 +194,6 @@ async function abrirModalSerie(serie) {
     document.getElementById("watchlist").checked = salvo?.watchlist || false;
     document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
 
-    // Carregar detalhes da série (número de temporadas)
-    const secaoSeries = document.getElementById("secao-series");
-    if (secaoSeries) secaoSeries.style.display = "block";
-
     mostrarToast("Carregando temporadas...");
 
     try {
@@ -266,7 +201,6 @@ async function abrirModalSerie(serie) {
         const detalhes = await res.json();
         totalTemporadas = detalhes.number_of_seasons || 1;
 
-        // Restaurar notas salvas
         if (salvo?.temporadas) {
             salvo.temporadas.forEach(t => { temporadasModal[t.numero] = t; });
         }
@@ -316,7 +250,6 @@ async function carregarTemporada(serieId, numero) {
         const data = await res.json();
         const episodios = data.episodes || [];
 
-        // Inicializar temporada se ainda não existe
         if (!temporadasModal[numero]) {
             temporadasModal[numero] = {
                 numero,
@@ -324,7 +257,6 @@ async function carregarTemporada(serieId, numero) {
                 episodios: episodios.map(ep => ({ numero: ep.episode_number, nome: ep.name, nota: 0 }))
             };
         } else {
-            // Garantir que todos os episódios existem
             episodios.forEach(ep => {
                 const existe = temporadasModal[numero].episodios.find(e => e.numero === ep.episode_number);
                 if (!existe) temporadasModal[numero].episodios.push({ numero: ep.episode_number, nome: ep.name, nota: 0 });
@@ -332,7 +264,6 @@ async function carregarTemporada(serieId, numero) {
         }
 
         renderizarEpisodios(numero);
-        renderizarNotaTemporada(numero);
     } catch (err) {
         lista.innerHTML = `<p style="font-size:13px; color:var(--muted);">Erro ao carregar episódios.</p>`;
     }
@@ -360,7 +291,6 @@ function renderizarEpisodios(numTemporada) {
         lista.appendChild(row);
     });
 
-    // Eventos das estrelas dos episódios
     lista.querySelectorAll(".ep-stars").forEach(container => {
         const numT = Number(container.dataset.temporada);
         const numEp = Number(container.dataset.ep);
@@ -380,11 +310,6 @@ function renderizarEpisodios(numTemporada) {
     atualizarMediaTemporada(numTemporada);
 }
 
-function renderizarNotaTemporada(numTemporada) {
-    // Nota geral da temporada já fica nas estrelas principais do modal quando a aba está ativa
-    // Usamos um campo separado de nota por temporada dentro de temporadasModal
-}
-
 function atualizarMediaTemporada(numTemporada) {
     const t = temporadasModal[numTemporada];
     if (!t) return;
@@ -394,7 +319,7 @@ function atualizarMediaTemporada(numTemporada) {
     if (el) el.innerText = `Média dos episódios da T${numTemporada}: ${media} ★`;
 }
 
-// ---------------- ESTRELAS GERAL ----------------
+// ---------------- ESTRELAS ----------------
 
 function ativarEstrelas() {
     document.querySelectorAll(".rating span").forEach(star => {
@@ -403,8 +328,7 @@ function ativarEstrelas() {
             document.querySelectorAll(".rating span").forEach(s => {
                 s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
             });
-            // Se for série, salvar nota da temporada ativa
-            if (filmeSelecionado?.tipo === "serie" && temporadasModal[temporadaAtiva]) {
+            if (temporadasModal[temporadaAtiva]) {
                 temporadasModal[temporadaAtiva].nota = notaSelecionada;
             }
         };
@@ -416,30 +340,27 @@ ativarEstrelas();
 // ---------------- SALVAR ----------------
 
 document.getElementById("salvar").addEventListener("click", () => {
-    if (!filmeSelecionado) {
-        mostrarToast("Pesquise e selecione um item antes de salvar.");
+    if (!serieSelecionada) {
+        mostrarToast("Pesquise e selecione uma série antes de salvar.");
         return;
     }
 
     const categoria = document.getElementById("categoriaFilme").value;
     const watchlist = document.getElementById("watchlist").checked;
-    const index = filmesSalvos.findIndex(f => f.id === filmeSelecionado.id && f.tipo === filmeSelecionado.tipo);
+    const index = filmesSalvos.findIndex(f => f.id === serieSelecionada.id && f.tipo === "serie");
 
     const obj = {
-        id: filmeSelecionado.id,
-        tipo: filmeSelecionado.tipo || "filme",
-        titulo: filmeSelecionado.title || filmeSelecionado.name,
-        imagem: filmeSelecionado.poster_path,
-        descricao: filmeSelecionado.overview || "",
-        generoIds: filmeSelecionado.genre_ids || [],
+        id: serieSelecionada.id,
+        tipo: "serie",
+        titulo: serieSelecionada.name || serieSelecionada.title,
+        imagem: serieSelecionada.poster_path,
+        descricao: serieSelecionada.overview || "",
+        generoIds: serieSelecionada.genre_ids || [],
         nota: notaSelecionada,
         categoria,
         watchlist,
+        temporadas: Object.values(temporadasModal),
     };
-
-    if (filmeSelecionado.tipo === "serie") {
-        obj.temporadas = Object.values(temporadasModal);
-    }
 
     if (index >= 0) {
         filmesSalvos[index] = obj;
@@ -450,12 +371,11 @@ document.getElementById("salvar").addEventListener("click", () => {
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
     atualizarCards();
     atualizarNavCounts();
-    mostrarToast("Salvo com sucesso!");
+    mostrarToast("Série salva com sucesso!");
     modal.classList.remove("active");
-
-    renderizarFilmes(filtroGeneroAtivo
-        ? filmesAtuais.filter(f => f.genre_ids?.includes(filtroGeneroAtivo))
-        : filmesAtuais
+    renderizarSeries(filtroGeneroAtivo
+        ? seriesAtuais.filter(s => s.genre_ids?.includes(filtroGeneroAtivo))
+        : seriesAtuais
     );
 });
 
@@ -463,27 +383,23 @@ document.getElementById("salvar").addEventListener("click", () => {
 
 function atualizarCards() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
-    const soFilmes = filmesSalvos.filter(f => f.tipo !== "serie");
-    const total = soFilmes.length;
-    const assistidos = soFilmes.filter(f => f.categoria === "Assistido").length;
+    const soSeries = filmesSalvos.filter(f => f.tipo === "serie");
+    const total = soSeries.length;
+    const assistidas = soSeries.filter(f => f.categoria === "Assistido").length;
     const media = total > 0
-        ? (soFilmes.reduce((acc, f) => acc + (f.nota || 0), 0) / total).toFixed(1)
+        ? (soSeries.reduce((acc, f) => acc + (f.nota || 0), 0) / total).toFixed(1)
         : 0;
 
     const h2s = document.querySelectorAll(".card h2");
     if (h2s[0]) h2s[0].innerText = total;
-    if (h2s[1]) h2s[1].innerText = assistidos;
+    if (h2s[1]) h2s[1].innerText = assistidas;
     if (h2s[2]) h2s[2].innerText = media;
 }
-
-// ---------------- CONTADOR ----------------
 
 function atualizarContador() {
     const el = document.getElementById("contador");
     if (el) el.innerText = document.querySelectorAll(".movie").length;
 }
-
-// ---------------- TOAST ----------------
 
 function mostrarToast(mensagem) {
     let toast = document.getElementById("toast");
@@ -497,7 +413,6 @@ function mostrarToast(mensagem) {
     setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
-// ---------------- INICIALIZAR ----------------
-
 atualizarCards();
+carregarGeneros();
 carregarGeneros();

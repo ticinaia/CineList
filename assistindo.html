@@ -8,15 +8,16 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="header">
-        <h1>Cine<strong>List</strong></h1>
-        <nav class="menu">
-            <a href="index.html">Todos <span id="nav-todos">0</span></a>
-            <a href="assistidos.html">Assistidos <span id="nav-assistidos">0</span></a>
-            <a href="watchlist.html">WatchList <span id="nav-watchlist">0</span></a>
-            <a href="assistindo.html" class="ativo">Assistindo <span id="nav-assistindo">0</span></a>
-        </nav>
-    </header>
+<header class="header">
+    <h1>Cine<strong>List</strong></h1>
+    <nav class="menu">
+        <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
+        <a href="series.html">Séries <span id="nav-count-series">0</span></a>
+        <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
+        <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
+        <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
+    </nav>
+</header>
 
     <main>
         <div id="todos">
@@ -38,7 +39,7 @@
 
         <div id="vazio" class="vazio hidden">
             <p>Nenhum filme em andamento.</p>
-            <a href="todos.html">Buscar filmes →</a>
+            <a href="index.html">Buscar filmes →</a>
         </div>
     </main>
 
@@ -73,7 +74,7 @@
             </div>
         </div>
     </div>
-
+    <script src="nav-counts.js"></script>
     <script src="shared.js"></script>
     <script>
         inicializarPagina("Assistindo");
