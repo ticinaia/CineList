@@ -11,18 +11,15 @@ let filmesAtuais = [];
 let notaSelecionada = 0;
 const tipoAtivo = "filme";
 
-// Gêneros
 let mapaGeneros = {};
 let filtroGeneroAtivo = null;
 
-// Dados de temporadas do item atual no modal
-let temporadasModal = {}; // { numTemporada: { nota: N, episodios: [{numero, nota}] } }
+let temporadasModal = {}; 
 let temporadaAtiva = 1;
 let totalTemporadas = 0;
 
 
 
-// ---------------- GÊNEROS ----------------
 
 async function carregarGeneros() {
     try {
@@ -87,7 +84,6 @@ function aplicarFiltroGenero() {
     }
 }
 
-// ---------------- MODAL ABRIR/FECHAR ----------------
 
 abrirBtn.addEventListener("click", () => {
     filmeSelecionado = null;
@@ -119,7 +115,6 @@ function limparModal() {
     totalTemporadas = 0;
 }
 
-// ---------------- BUSCA ----------------
 
 let timeout;
 
@@ -148,7 +143,6 @@ async function buscarItens(query) {
     }
 }
 
-// ---------------- RENDER CARDS ----------------
 
 function renderizarFilmes(lista) {
     const container = document.querySelector(".filmes");
@@ -201,7 +195,6 @@ function renderizarFilmes(lista) {
     atualizarContador();
 }
 
-// ---------------- MODAL FILME ----------------
 
 function abrirModalFilme(filme) {
     filmeSelecionado = { ...filme, tipo: "filme" };
@@ -230,7 +223,6 @@ function abrirModalFilme(filme) {
     modal.classList.add("active");
 }
 
-// ---------------- MODAL SÉRIE ----------------
 
 async function abrirModalSerie(serie) {
     filmeSelecionado = { ...serie, tipo: "serie" };
@@ -266,7 +258,6 @@ async function abrirModalSerie(serie) {
         const detalhes = await res.json();
         totalTemporadas = detalhes.number_of_seasons || 1;
 
-        // Restaurar notas salvas
         if (salvo?.temporadas) {
             salvo.temporadas.forEach(t => { temporadasModal[t.numero] = t; });
         }
@@ -282,7 +273,6 @@ async function abrirModalSerie(serie) {
     modal.classList.add("active");
 }
 
-// ---------------- TEMPORADAS ----------------
 
 function renderizarAbasTemporadas(serieId) {
     const tabs = document.getElementById("seasons-tabs");
@@ -316,7 +306,6 @@ async function carregarTemporada(serieId, numero) {
         const data = await res.json();
         const episodios = data.episodes || [];
 
-        // Inicializar temporada se ainda não existe
         if (!temporadasModal[numero]) {
             temporadasModal[numero] = {
                 numero,
@@ -324,7 +313,6 @@ async function carregarTemporada(serieId, numero) {
                 episodios: episodios.map(ep => ({ numero: ep.episode_number, nome: ep.name, nota: 0 }))
             };
         } else {
-            // Garantir que todos os episódios existem
             episodios.forEach(ep => {
                 const existe = temporadasModal[numero].episodios.find(e => e.numero === ep.episode_number);
                 if (!existe) temporadasModal[numero].episodios.push({ numero: ep.episode_number, nome: ep.name, nota: 0 });
@@ -360,7 +348,6 @@ function renderizarEpisodios(numTemporada) {
         lista.appendChild(row);
     });
 
-    // Eventos das estrelas dos episódios
     lista.querySelectorAll(".ep-stars").forEach(container => {
         const numT = Number(container.dataset.temporada);
         const numEp = Number(container.dataset.ep);
@@ -381,8 +368,6 @@ function renderizarEpisodios(numTemporada) {
 }
 
 function renderizarNotaTemporada(numTemporada) {
-    // Nota geral da temporada já fica nas estrelas principais do modal quando a aba está ativa
-    // Usamos um campo separado de nota por temporada dentro de temporadasModal
 }
 
 function atualizarMediaTemporada(numTemporada) {
@@ -394,7 +379,6 @@ function atualizarMediaTemporada(numTemporada) {
     if (el) el.innerText = `Média dos episódios da T${numTemporada}: ${media} ★`;
 }
 
-// ---------------- ESTRELAS GERAL ----------------
 
 function ativarEstrelas() {
     document.querySelectorAll(".rating span").forEach(star => {
@@ -413,7 +397,6 @@ function ativarEstrelas() {
 
 ativarEstrelas();
 
-// ---------------- SALVAR ----------------
 
 document.getElementById("salvar").addEventListener("click", () => {
     if (!filmeSelecionado) {
@@ -459,7 +442,6 @@ document.getElementById("salvar").addEventListener("click", () => {
     );
 });
 
-// ---------------- CARDS STATS ----------------
 
 function atualizarCards() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
@@ -476,14 +458,12 @@ function atualizarCards() {
     if (h2s[2]) h2s[2].innerText = media;
 }
 
-// ---------------- CONTADOR ----------------
 
 function atualizarContador() {
     const el = document.getElementById("contador");
     if (el) el.innerText = document.querySelectorAll(".movie").length;
 }
 
-// ---------------- TOAST ----------------
 
 function mostrarToast(mensagem) {
     let toast = document.getElementById("toast");
@@ -497,7 +477,6 @@ function mostrarToast(mensagem) {
     setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
-// ---------------- INICIALIZAR ----------------
 
 atualizarCards();
 carregarGeneros();

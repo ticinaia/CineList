@@ -73,7 +73,7 @@ function aplicarFiltroGenero() {
     if (filtradas.length === 0) mostrarToast(`Nenhum resultado para "${mapaGeneros[filtroGeneroAtivo] || "esse gênero"}".`);
 }
 
-// ---------------- MODAL ----------------
+// ---------------- MODA
 
 abrirBtn.addEventListener("click", () => {
     serieSelecionada = null;
@@ -103,7 +103,6 @@ function limparModal() {
     totalTemporadas = 0;
 }
 
-// ---------------- BUSCA ----------------
 
 let timeout;
 buscador.addEventListener("input", () => {
@@ -125,7 +124,6 @@ async function buscarSeries(query) {
     }
 }
 
-// ---------------- RENDER ----------------
 
 function renderizarSeries(lista) {
     const container = document.querySelector(".filmes");
@@ -169,7 +167,6 @@ function renderizarSeries(lista) {
     atualizarContador();
 }
 
-// ---------------- MODAL SÉRIE ----------------
 
 async function abrirModalSerie(serie) {
     serieSelecionada = serie;
@@ -216,7 +213,6 @@ async function abrirModalSerie(serie) {
     modal.classList.add("active");
 }
 
-// ---------------- TEMPORADAS ----------------
 
 function renderizarAbasTemporadas(serieId) {
     const tabs = document.getElementById("seasons-tabs");
@@ -319,7 +315,6 @@ function atualizarMediaTemporada(numTemporada) {
     if (el) el.innerText = `Média dos episódios da T${numTemporada}: ${media} ★`;
 }
 
-// ---------------- ESTRELAS ----------------
 
 function ativarEstrelas() {
     document.querySelectorAll(".rating span").forEach(star => {
@@ -337,7 +332,6 @@ function ativarEstrelas() {
 
 ativarEstrelas();
 
-// ---------------- SALVAR ----------------
 
 document.getElementById("salvar").addEventListener("click", () => {
     if (!serieSelecionada) {
@@ -379,7 +373,6 @@ document.getElementById("salvar").addEventListener("click", () => {
     );
 });
 
-// ---------------- CARDS STATS ----------------
 
 function atualizarCards() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];

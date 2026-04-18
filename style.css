@@ -181,7 +181,7 @@ main {
     font-size: 11px;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--muted);
+    color: var(--ink);
     margin: 0 0 6px;
 }
 
@@ -195,7 +195,7 @@ main {
 
 .card span {
     font-size: 13px;
-    color: var(--muted);
+    color: var(--ink);
 }
 
 .card:hover {
@@ -238,7 +238,6 @@ main {
     background: var(--gold);
 }
 
-/* ---- FILMES ---- */
 .filmes {
     display: flex;
     flex-wrap: wrap;
@@ -275,15 +274,15 @@ main {
 
 .movie .nome {
     font-family: 'DM Serif Display', serif;
-    font-size: 14px;
+    font-size: 20px;
     color: var(--gold);
     text-decoration: underline;
 }
 
 .movie .diretor,
 .movie .genero {
-    font-size: 12px;
-    color: var(--muted);
+    font-size: 16px;
+    color: var(--ink);
 }
 
 .status {
@@ -299,7 +298,6 @@ main {
     right: 14px;
 }
 
-/* ---- MODAL ---- */
 #modal {
     position: fixed;
     inset: 0;
@@ -431,7 +429,6 @@ main {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ---- LINK ATIVO NO MENU ---- */
 .menu a.ativo {
     background: var(--gold);
     color: var(--ink);
@@ -443,7 +440,6 @@ main {
     color: var(--gold);
 }
 
-/* ---- BOTÃO REMOVER ---- */
 .btn-remover {
     background: transparent !important;
     border: 1px solid #c0392b !important;
@@ -455,7 +451,6 @@ main {
     color: #fff !important;
 }
 
-/* ---- ESTADO VAZIO ---- */
 .vazio {
     text-align: center;
     padding: 60px 20px;
@@ -477,7 +472,6 @@ main {
     display: none !important;
 }
 
-/* ---- TOAST ---- */
 #toast {
     position: fixed;
     bottom: 32px;
@@ -501,25 +495,11 @@ main {
     transform: translateX(-50%) translateY(0);
 }
 
-/* ---- FILTRO ATIVO ---- */
-.categoria a.filtro-ativo {
-    background: var(--gold);
-    color: var(--ink);
-    border-color: var(--gold);
-    font-weight: 500;
-}
-
-/* nota do TMDB nos cards */
 .nota-tmdb {
     font-size: 12px;
     color: var(--muted);
 }
 
-/* ======================================
-   NOVOS ESTILOS — SÉRIES
-   ====================================== */
-
-/* Toggle Filme / Série */
 .tipo-toggle {
     display: flex;
     background: var(--ink);
@@ -547,7 +527,6 @@ main {
     font-weight: 500;
 }
 
-/* Badge tipo (Filme / Série) no card */
 .badge-tipo {
     position: absolute;
     top: 14px;
@@ -571,14 +550,12 @@ main {
     border: 1px solid var(--card-bg);
 }
 
-/* Seção de séries no modal */
 #secao-series {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-/* Abas de temporadas */
 .seasons-tabs {
     display: flex;
     gap: 6px;
@@ -609,7 +586,6 @@ main {
     font-weight: 500;
 }
 
-/* Lista de episódios */
 #episodios-lista {
     display: flex;
     flex-direction: column;
@@ -689,7 +665,6 @@ main {
     transform: scale(1.2);
 }
 
-/* ---- LOGO CLICÁVEL ---- */
 .logo-link {
     text-decoration: none;
     flex-shrink: 0;
