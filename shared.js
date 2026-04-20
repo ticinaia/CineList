@@ -7,6 +7,9 @@ let categoriaAtual = "";
 let filtroAtual = "";
 const cacheDuracoes = JSON.parse(localStorage.getItem("cache_duracoes") || "{}");
 const cacheDuracoesSeries = JSON.parse(localStorage.getItem("cache_duracoes_series") || "{}");
+let watchlistDragAtivo = false;
+let watchlistDragInicioX = 0;
+let watchlistScrollInicio = 0;
 
 function obterListaBase(categoria) {
     return categoria === "WatchList"
@@ -67,11 +70,17 @@ function atualizarControlesCarousel() {
     const container = document.getElementById("lista-filmes");
     const prev = document.getElementById("watchlist-prev");
     const next = document.getElementById("watchlist-next");
+    const progress = document.getElementById("watchlist-progress-bar");
     if (!container || !prev || !next) return;
 
     const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
     prev.disabled = container.scrollLeft <= 4;
     next.disabled = container.scrollLeft >= maxScroll - 4;
+
+    if (progress) {
+        const proporcao = maxScroll <= 0 ? 1 : Math.min(1, container.scrollLeft / maxScroll);
+        progress.style.transform = `scaleX(${Math.max(0.08, proporcao)})`;
+    }
 }
 
 function atualizarCarouselWatchlist() {
@@ -87,8 +96,49 @@ function rolarWatchlist(direcao) {
     if (!container) return;
     const card = container.querySelector(".movie");
     const distancia = card ? card.offsetWidth + 20 : 240;
-    container.scrollBy({ left: direcao * distancia * 2, behavior: "smooth" });
+    container.scrollBy({ left: direcao * distancia * 1.2, behavior: "smooth" });
     setTimeout(atualizarControlesCarousel, 250);
+}
+
+function iniciarInteracaoCarousel() {
+    if (categoriaAtual !== "WatchList") return;
+    const container = document.getElementById("lista-filmes");
+    if (!container || container.dataset.carouselBound === "true") return;
+
+    container.dataset.carouselBound = "true";
+
+    container.addEventListener("mousedown", (e) => {
+        watchlistDragAtivo = true;
+        watchlistDragInicioX = e.pageX - container.offsetLeft;
+        watchlistScrollInicio = container.scrollLeft;
+        container.classList.add("is-dragging");
+    });
+
+    window.addEventListener("mouseup", () => {
+        watchlistDragAtivo = false;
+        container.classList.remove("is-dragging");
+    });
+
+    container.addEventListener("mouseleave", () => {
+        watchlistDragAtivo = false;
+        container.classList.remove("is-dragging");
+    });
+
+    container.addEventListener("mousemove", (e) => {
+        if (!watchlistDragAtivo) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - watchlistDragInicioX) * 1.2;
+        container.scrollLeft = watchlistScrollInicio - walk;
+        atualizarControlesCarousel();
+    });
+
+    container.addEventListener("wheel", (e) => {
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+        e.preventDefault();
+        container.scrollBy({ left: e.deltaY * 0.8, behavior: "auto" });
+        atualizarControlesCarousel();
+    }, { passive: false });
 }
 
 function limparFiltroLocal() {
@@ -141,23 +191,28 @@ function renderizarLista(categoria, filtro = "") {
             ? `<span class="badge-tipo badge-serie">Série</span>`
             : `<span class="badge-tipo badge-filme">Filme</span>`;
 
-        const div = document.createElement("div");
-        div.classList.add("movie");
-        div.innerHTML = `
-            <img src="${poster}" alt="${filme.titulo}">
-            <span class="status">${filme.categoria}</span>
-            ${badgeTipo}
-            <div class="info">
-                <h3 class="nome">${filme.titulo}</h3>
-                <span class="diretor">${estrelas}</span>
-            </div>
-        `;
-        div.addEventListener("click", () => abrirModal(filme));
-        container.appendChild(div);
+        const card = criarCardMidia({
+            item: {
+                poster_path: filme.imagem,
+                title: filme.titulo
+            },
+            tipo: filme.tipo === "serie" ? "serie" : "filme",
+            salvo: filme,
+            ano: estrelas,
+            notaTexto: "",
+            onActivate: () => abrirModal(filme)
+        });
+
+        const status = card.querySelector(".status");
+        if (status) status.textContent = filme.categoria;
+        const nota = card.querySelector(".nota-tmdb");
+        if (nota) nota.remove();
+        container.appendChild(card);
     });
 
     atualizarCardsSecundarios(categoria);
     atualizarCarouselWatchlist();
+    iniciarInteracaoCarousel();
 }
 
 function atualizarCardsSecundarios(categoria) {
@@ -266,28 +321,23 @@ function abrirModal(filme) {
         ? "⭐ Sua nota: " + filme.nota
         : "Sem nota";
     document.getElementById("categoriaFilme").value = filme.categoria || categoriaAtual;
+    atualizarVisualCategoriaSelect();
     document.getElementById("watchlist").checked = filme.watchlist || false;
 
-    document.querySelectorAll(".rating span").forEach(s => {
-        s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
-    });
+    window.atualizarEstrelas(document.querySelector(".rating"), notaSelecionada);
 
-    document.getElementById("modal").classList.add("active");
+    abrirModalAcessivel("modal");
 }
 
 function fecharModal() {
-    document.getElementById("modal").classList.remove("active");
+    fecharModalAcessivel("modal");
     filmeSelecionado = null;
 }
 
-function ativarEstrelas() {
-    document.querySelectorAll(".rating span").forEach(star => {
-        star.addEventListener("click", () => {
-            notaSelecionada = Number(star.dataset.value);
-            document.querySelectorAll(".rating span").forEach(s => {
-                s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
-            });
-        });
+function configurarAvaliacaoModal() {
+    window.ativarEstrelas(document.querySelector(".rating"), (nota) => {
+        notaSelecionada = nota;
+        window.atualizarEstrelas(document.querySelector(".rating"), notaSelecionada);
     });
 }
 
@@ -319,18 +369,6 @@ function remover() {
     renderizarLista(categoriaAtual);
 }
 
-function mostrarToast(mensagem) {
-    let toast = document.getElementById("toast");
-    if (!toast) {
-        toast = document.createElement("div");
-        toast.id = "toast";
-        document.body.appendChild(toast);
-    }
-    toast.innerText = mensagem;
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2500);
-}
-
 function ativarFiltroLocal() {
     const buscador = document.getElementById("buscador");
     if (!buscador) return;
@@ -342,8 +380,9 @@ function ativarFiltroLocal() {
 function inicializarPagina(categoria) {
     categoriaAtual = categoria;
     renderizarLista(categoria);
-    ativarEstrelas();
+    configurarAvaliacaoModal();
     ativarFiltroLocal();
+    ativarVisualCategoriaSelect();
 
     document.getElementById("fecharModal").addEventListener("click", fecharModal);
     document.getElementById("salvar").addEventListener("click", salvar);

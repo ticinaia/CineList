@@ -4,11 +4,36 @@ const TRAKT_API_KEY = "d300e7cdf7313b498d7ced71ea867b5c817912984e5c64015ce904437
 let tipoSug    = "filme";
 let mapaGeneros = {};
 
+function salvarContextoSugestoes() {
+    sessionStorage.setItem("sugestoes_contexto", JSON.stringify({
+        tipo: tipoSug,
+        scrollY: window.scrollY
+    }));
+}
+
+function restaurarContextoSugestoes() {
+    try {
+        const contexto = JSON.parse(sessionStorage.getItem("sugestoes_contexto") || "null");
+        if (contexto?.tipo === "filme" || contexto?.tipo === "serie") {
+            tipoSug = contexto.tipo;
+        }
+    } catch (err) {
+        sessionStorage.removeItem("sugestoes_contexto");
+    }
+
+    document.getElementById("btn-filmes-sug")?.classList.toggle("active", tipoSug === "filme");
+    document.getElementById("btn-series-sug")?.classList.toggle("active", tipoSug === "serie");
+    document.getElementById("btn-filmes-sug")?.setAttribute("aria-pressed", tipoSug === "filme" ? "true" : "false");
+    document.getElementById("btn-series-sug")?.setAttribute("aria-pressed", tipoSug === "serie" ? "true" : "false");
+}
+
 
 function setTipoSug(tipo) {
     tipoSug = tipo;
     document.getElementById("btn-filmes-sug").classList.toggle("active", tipo === "filme");
     document.getElementById("btn-series-sug").classList.toggle("active", tipo === "serie");
+    document.getElementById("btn-filmes-sug").setAttribute("aria-pressed", tipo === "filme" ? "true" : "false");
+    document.getElementById("btn-series-sug").setAttribute("aria-pressed", tipo === "serie" ? "true" : "false");
     iniciar();
 }
 
@@ -77,6 +102,8 @@ function renderizarGenerosFavoritos(generos) {
 
 function aoClicarSugestao(item, tipo) {
     return async () => {
+        salvarContextoSugestoes();
+        sessionStorage.setItem("origem_modal_sugestao", "sugestoes");
         const pagina  = tipo === "filme" ? "index.html" : "series.html";
         const payload = { id: item.id, titulo: item.title || item.name, tipo, item };
 
@@ -106,26 +133,16 @@ function aoClicarSugestao(item, tipo) {
 
 
 function criarCardSugestao(item, tipo) {
-    const poster = item.poster_path
-        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-        : "https://via.placeholder.com/250x350?text=Sem+Imagem";
-    const titulo = item.title || item.name || "Sem título";
     const ano    = (item.release_date || item.first_air_date || "").slice(0, 4) || "—";
     const nota   = item.vote_average?.toFixed(1) || "0";
 
-    const div = document.createElement("div");
-    div.classList.add("movie");
-    div.innerHTML = `
-        <img src="${poster}" alt="${titulo}">
-        <span class="badge-tipo ${tipo === 'filme' ? 'badge-filme' : 'badge-serie'}">${tipo === 'filme' ? 'Filme' : 'Série'}</span>
-        <div class="info">
-            <h3 class="nome">${titulo}</h3>
-            <span class="diretor">${ano}</span>
-            <span class="nota-tmdb">⭐ ${nota}</span>
-        </div>
-    `;
-    div.addEventListener("click", aoClicarSugestao(item, tipo));
-    return div;
+    return criarCardMidia({
+        item,
+        tipo,
+        ano,
+        notaTexto: `⭐ ${nota}`,
+        onActivate: aoClicarSugestao(item, tipo)
+    });
 }
 
 async function buscarSugestoesTMDB(generos, tipo) {
@@ -292,6 +309,19 @@ async function iniciar() {
         buscarSugestoesTMDB(generos, tipoSug),
         renderizarSecaoTrakt(tipoSug)
     ]);
+
+    try {
+        const contexto = JSON.parse(sessionStorage.getItem("sugestoes_contexto") || "null");
+        if (typeof contexto?.scrollY === "number") {
+            window.scrollTo({ top: contexto.scrollY, behavior: "auto" });
+        }
+    } catch (err) {
+        sessionStorage.removeItem("sugestoes_contexto");
+    }
 }
 
+document.getElementById("btn-filmes-sug")?.addEventListener("click", () => setTipoSug("filme"));
+document.getElementById("btn-series-sug")?.addEventListener("click", () => setTipoSug("serie"));
+
+restaurarContextoSugestoes();
 iniciar();

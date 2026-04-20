@@ -8,27 +8,28 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="header">
+    <header class="header" role="banner">
         <a href="index.html" class="logo-link"><h1>Cine<strong>List</strong></h1></a>
         <nav class="menu">
             <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
             <a href="series.html">Séries <span id="nav-count-series">0</span></a>
             <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
             <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
-            <a href="assistindo.html" class="active">Assistindo <span id="nav-count-assistindo">0</span></a>
+            <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
             <a href="sugestoes.html">Sugestões <span class="menu-star">✦</span></a>
         </nav>
     </header>
 
     <main>
-        <div id="todos">
+        <section id="todos" aria-label="Resumo e busca de títulos em andamento">
             <h2>Assistindo <span id="contador">0</span></h2>
-            <div id="pesquisa">
+            <div id="pesquisa" role="search" aria-label="Buscar títulos em andamento">
+                <label class="sr-only" for="buscador">Buscar títulos em andamento</label>
                 <input type="text" id="buscador" placeholder="Buscar...">
             </div>
-        </div>
+        </section>
 
-        <div class="cards">
+        <section class="cards" aria-label="Indicadores de títulos em andamento">
             <div class="card">
                 <p class="label">Total</p>
                 <h2 id="card-total">0</h2>
@@ -44,17 +45,17 @@
                 <h2 id="card-melhor">—</h2>
                 <span>estrelas</span>
             </div>
-        </div>
+        </section>
 
-        <div id="lista-filmes" class="filmes"></div>
+        <section id="lista-filmes" class="filmes" aria-live="polite" aria-label="Lista de títulos em andamento"></section>
         <div id="vazio" class="vazio hidden">
             <p>Nenhum título em andamento.</p>
             <a href="index.html">Adicionar filmes</a> ou <a href="series.html">Adicionar séries</a>
         </div>
     </main>
 
-    <div id="modal">
-        <div class="modal-content">
+    <div id="modal" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="tituloFilme">
             <h2 id="tituloFilme"></h2>
             <img id="posterDetalhe" style="width:100%; border-radius:10px;" alt="">
             <p id="descricaoFilme"></p>
@@ -89,6 +90,8 @@
         </div>
     </div>
 
+    <script src="auth.js"></script>
+    <script src="ui_shared.js"></script>
     <script src="nav_counts.js"></script>
     <script src="shared.js"></script>
     <script>inicializarPagina("Assistindo");</script>

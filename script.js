@@ -7,6 +7,21 @@ const abrirBtn = document.getElementById("adicionarModal");
 const fecharBtn= document.getElementById("fecharModal");
 const buscador = document.getElementById("buscador");
 
+function veioDeSugestoes() {
+    return sessionStorage.getItem("origem_modal_sugestao") === "sugestoes";
+}
+
+function limparOrigemSugestoes() {
+    sessionStorage.removeItem("origem_modal_sugestao");
+}
+
+function voltarParaSugestoesSePreciso() {
+    if (!veioDeSugestoes()) return false;
+    limparOrigemSugestoes();
+    window.location.href = "sugestoes.html";
+    return true;
+}
+
 let filmeSelecionado  = null;
 let filmesSalvos      = JSON.parse(localStorage.getItem("filmes")) || [];
 let filmesAtuais      = [];
@@ -22,6 +37,7 @@ const temSugestaoPendente = (() => {
 
 let mapaGeneros      = {};
 let filtroGeneroAtivo = null;
+let homeInicialAtiva = true;
 
 
 let temporadasModal  = {};
@@ -64,17 +80,26 @@ function renderizarBotoesFiltro(generosApi) {
 
 function ativarFiltros() {
     document.querySelectorAll(".filtros .categoria a").forEach(botao => {
-        botao.addEventListener("click", (e) => {
+        botao.addEventListener("click", async (e) => {
             e.preventDefault();
             document.querySelectorAll(".filtros .categoria a").forEach(b => b.classList.remove("filtro-ativo"));
             botao.classList.add("filtro-ativo");
             const idStr = botao.dataset.id;
             if (!idStr) {
                 filtroGeneroAtivo = null;
+                if (buscador.value.trim() === "") {
+                    homeInicialAtiva = true;
+                    carregarHome();
+                    return;
+                }
                 renderizarFilmes(filmesAtuais);
                 return;
             }
             filtroGeneroAtivo = Number(idStr);
+            if (buscador.value.trim() === "" && homeInicialAtiva) {
+                await carregarFilmesPopularesPorGenero(filtroGeneroAtivo);
+                return;
+            }
             aplicarFiltroGenero();
         });
     });
@@ -93,13 +118,23 @@ function aplicarFiltroGenero() {
 abrirBtn.addEventListener("click", () => {
     filmeSelecionado = null;
     limparModal();
-    modal.classList.add("active");
+    abrirModalAcessivel("modal", abrirBtn);
 });
 
-fecharBtn.addEventListener("click", () => modal.classList.remove("active"));
+fecharBtn.addEventListener("click", () => {
+    fecharModalAcessivel("modal");
+    if (!voltarParaSugestoesSePreciso()) {
+        limparOrigemSugestoes();
+    }
+});
 
 modal.addEventListener("click", (e) => {
-    if (e.target === modal) modal.classList.remove("active");
+    if (e.target === modal) {
+        fecharModalAcessivel("modal");
+        if (!voltarParaSugestoesSePreciso()) {
+            limparOrigemSugestoes();
+        }
+    }
 });
 
 function limparModal() {
@@ -110,9 +145,10 @@ function limparModal() {
     document.getElementById("suaNota").innerText = "";
     document.getElementById("infoExtra").innerText = "";
     document.getElementById("categoriaFilme").value = "Favorito";
+    atualizarVisualCategoriaSelect();
     document.getElementById("watchlist").checked = false;
     notaSelecionada = 0;
-    document.querySelectorAll(".rating span").forEach(s => s.classList.remove("active"));
+    window.atualizarEstrelas(document.querySelector(".rating"), 0);
     const secaoSeries = document.getElementById("secao-series");
     if (secaoSeries) secaoSeries.style.display = "none";
     temporadasModal = {};
@@ -133,16 +169,48 @@ document.getElementById("buscar").addEventListener("click", () => {
 });
 
 async function buscarItens(query) {
+    if (query.length === 0) {
+        homeInicialAtiva = true;
+        filtroGeneroAtivo = null;
+        const filtroTodos = document.querySelector('.filtros .categoria a[data-id=""]');
+        if (filtroTodos) {
+            document.querySelectorAll(".filtros .categoria a").forEach(b => b.classList.remove("filtro-ativo"));
+            filtroTodos.classList.add("filtro-ativo");
+        }
+        carregarHome();
+        return;
+    }
     if (query.length < 3) return;
     try {
         const endpoint = `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`;
         const res  = await fetch(endpoint);
         const data = await res.json();
         filmesAtuais = data.results || [];
+        homeInicialAtiva = false;
         filtroGeneroAtivo ? aplicarFiltroGenero() : renderizarFilmes(filmesAtuais);
     } catch (err) {
         console.error("Erro ao buscar:", err);
         mostrarToast("Erro ao buscar. Verifique sua conexão.");
+    }
+}
+
+async function carregarFilmesPopularesPorGenero(generoId) {
+    const container = document.querySelector(".filmes");
+    if (!container) return;
+    container.innerHTML = `<p style="color:var(--muted); font-size:14px; padding:20px 0;">Carregando filmes de ${mapaGeneros[generoId] || "este gênero"}...</p>`;
+
+    try {
+        const res = await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=pt-BR&sort_by=popularity.desc&with_genres=${generoId}&page=1`);
+        const data = await res.json();
+        filmesAtuais = data.results || [];
+        homeInicialAtiva = true;
+        renderizarFilmes(filmesAtuais.slice(0, 18));
+        if (filmesAtuais.length === 0) {
+            mostrarToast(`Nenhum filme popular encontrado para "${mapaGeneros[generoId] || "esse gênero"}".`);
+        }
+    } catch (err) {
+        console.error("Erro ao carregar filmes por gênero:", err);
+        container.innerHTML = `<p style="color:var(--muted); font-size:14px; padding:20px 0;">Não foi possível carregar os filmes desse filtro agora.</p>`;
     }
 }
 
@@ -164,9 +232,6 @@ async function processarSugestaoPendente() {
         }
         if (!item || item.success === false || !item.id) throw new Error("Filme não encontrado");
 
-        filmesAtuais = [item];
-        filtroGeneroAtivo = null;
-        renderizarFilmes(filmesAtuais);
         abrirModalFilme(item);
     } catch (err) {
         console.error("Erro ao abrir sugestão:", err);
@@ -214,14 +279,14 @@ function abrirModalFilme(filme) {
     document.getElementById("infoExtra").innerText  = generosTexto ? "🎬 " + generosTexto : "";
     document.getElementById("suaNota").innerText = salvo?.nota ? "⭐ Sua nota: " + salvo.nota : "Você ainda não avaliou";
     notaSelecionada = salvo?.nota || 0;
-    document.querySelectorAll(".rating span").forEach(s => {
-        s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
-    });
+    window.atualizarEstrelas(document.querySelector(".rating"), notaSelecionada);
     document.getElementById("watchlist").checked = salvo?.watchlist || false;
     document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
+    atualizarVisualCategoriaSelect();
 
-    ativarEstrelas();
-    modal.classList.add("active");
+    configurarAvaliacaoModal();
+    ativarVisualCategoriaSelect();
+    abrirModalAcessivel("modal", document.activeElement);
 }
 
 
@@ -242,11 +307,10 @@ async function abrirModalSerie(serie) {
     const salvo = filmesSalvos.find(f => f.id === serie.id && f.tipo === "serie");
     document.getElementById("suaNota").innerText = salvo?.nota ? "⭐ Sua nota: " + salvo.nota : "Você ainda não avaliou";
     notaSelecionada = salvo?.nota || 0;
-    document.querySelectorAll(".rating span").forEach(s => {
-        s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
-    });
+    window.atualizarEstrelas(document.querySelector(".rating"), notaSelecionada);
     document.getElementById("watchlist").checked = salvo?.watchlist || false;
     document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
+    atualizarVisualCategoriaSelect();
 
     const secaoSeries = document.getElementById("secao-series");
     if (secaoSeries) secaoSeries.style.display = "block";
@@ -269,8 +333,8 @@ async function abrirModalSerie(serie) {
         mostrarToast("Erro ao carregar temporadas.");
     }
 
-    ativarEstrelas();
-    modal.classList.add("active");
+    configurarAvaliacaoModal();
+    abrirModalAcessivel("modal", document.activeElement);
 }
 
 function renderizarAbasTemporadas(serieId) {
@@ -279,8 +343,10 @@ function renderizarAbasTemporadas(serieId) {
     tabs.innerHTML = "";
     for (let i = 1; i <= totalTemporadas; i++) {
         const btn = document.createElement("button");
+        btn.type = "button";
         btn.classList.add("s-tab");
         if (i === temporadaAtiva) btn.classList.add("active");
+        btn.setAttribute("aria-pressed", i === temporadaAtiva ? "true" : "false");
         btn.innerText = `T${i}`;
         btn.addEventListener("click", () => trocarTemporada(serieId, i));
         tabs.appendChild(btn);
@@ -291,6 +357,7 @@ async function trocarTemporada(serieId, numero) {
     temporadaAtiva = numero;
     document.querySelectorAll(".s-tab").forEach((btn, idx) => {
         btn.classList.toggle("active", idx + 1 === numero);
+        btn.setAttribute("aria-pressed", idx + 1 === numero ? "true" : "false");
     });
     await carregarTemporada(serieId, numero);
 }
@@ -349,14 +416,30 @@ function renderizarEpisodios(numTemporada) {
         const numT  = Number(container.dataset.temporada);
         const numEp = Number(container.dataset.ep);
         container.querySelectorAll(".ep-star").forEach(star => {
-            star.addEventListener("click", () => {
+            star.setAttribute("role", "button");
+            star.setAttribute("tabindex", "0");
+            star.setAttribute("aria-label", `Dar nota ${star.dataset.val} para o episódio ${numEp}`);
+
+            const aplicarNota = () => {
                 const val = Number(star.dataset.val);
                 const ep  = temporadasModal[numT]?.episodios.find(e => e.numero === numEp);
                 if (ep) ep.nota = val;
                 container.querySelectorAll(".ep-star").forEach(s => {
                     s.classList.toggle("active", Number(s.dataset.val) <= val);
+                    s.setAttribute("aria-pressed", Number(s.dataset.val) <= val ? "true" : "false");
                 });
                 atualizarMediaTemporada(numT);
+            };
+
+            star.addEventListener("click", () => {
+                aplicarNota();
+            });
+
+            star.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    aplicarNota();
+                }
             });
         });
     });
@@ -374,21 +457,16 @@ function atualizarMediaTemporada(numTemporada) {
 }
 
 
-function ativarEstrelas() {
-    document.querySelectorAll(".rating span").forEach(star => {
-        star.onclick = () => {
-            notaSelecionada = Number(star.dataset.value);
-            document.querySelectorAll(".rating span").forEach(s => {
-                s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
-            });
-            if (filmeSelecionado?.tipo === "serie" && temporadasModal[temporadaAtiva]) {
-                temporadasModal[temporadaAtiva].nota = notaSelecionada;
-            }
-        };
+function configurarAvaliacaoModal() {
+    window.ativarEstrelas(document.querySelector(".rating"), (nota) => {
+        notaSelecionada = nota;
+        window.atualizarEstrelas(document.querySelector(".rating"), notaSelecionada);
+        if (filmeSelecionado?.tipo === "serie" && temporadasModal[temporadaAtiva]) {
+            temporadasModal[temporadaAtiva].nota = notaSelecionada;
+        }
     });
 }
-
-ativarEstrelas();
+configurarAvaliacaoModal();
 
 
 document.getElementById("salvar").addEventListener("click", () => {
@@ -424,7 +502,9 @@ document.getElementById("salvar").addEventListener("click", () => {
     atualizarCards();
     if (typeof atualizarNavCounts === "function") atualizarNavCounts();
     mostrarToast("Salvo com sucesso!");
-    modal.classList.remove("active");
+    fecharModalAcessivel("modal");
+
+    limparOrigemSugestoes();
 
     if (filmesAtuais.length > 0) {
         renderizarFilmes(filtroGeneroAtivo
@@ -504,45 +584,22 @@ function atualizarContador() {
 }
 
 
-function mostrarToast(mensagem) {
-    let toast = document.getElementById("toast");
-    if (!toast) {
-        toast = document.createElement("div");
-        toast.id = "toast";
-        document.body.appendChild(toast);
-    }
-    toast.innerText = mensagem;
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2500);
-}
-
-
 function criarCard(item, tipo) {
-    const poster = item.poster_path
-        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-        : "https://via.placeholder.com/250x350?text=Sem+Imagem";
     const titulo = item.title || item.name || "Sem título";
     const ano    = (item.release_date || item.first_air_date || "").slice(0, 4) || "—";
     const salvo  = filmesSalvos.find(f => f.id === item.id && f.tipo === tipo);
-    const badgeStatus = salvo ? `<span class="status">${salvo.categoria}</span>` : "";
     const notaTexto = tipo === "filme" && salvo?.categoria === "Assistido" && salvo?.nota
         ? `Sua nota: ${salvo.nota}`
         : `⭐ ${item.vote_average?.toFixed(1) || "0"}`;
 
-    const div = document.createElement("div");
-    div.classList.add("movie");
-    div.innerHTML = `
-        <img src="${poster}" alt="${titulo}">
-        ${badgeStatus}
-        <span class="badge-tipo ${tipo === 'filme' ? 'badge-filme' : 'badge-serie'}">${tipo === 'filme' ? 'Filme' : 'Série'}</span>
-        <div class="info">
-            <h3 class="nome">${titulo}</h3>
-            <span class="diretor">${ano}</span>
-            <span class="nota-tmdb">${notaTexto}</span>
-        </div>
-    `;
-    div.addEventListener("click", () => tipo === "filme" ? abrirModalFilme(item) : abrirModalSerie(item));
-    return div;
+    return criarCardMidia({
+        item,
+        tipo,
+        salvo,
+        ano,
+        notaTexto,
+        onActivate: () => tipo === "filme" ? abrirModalFilme(item) : abrirModalSerie(item)
+    });
 }
 
 
@@ -604,6 +661,8 @@ async function carregarHome() {
     const container = document.querySelector(".filmes");
     if (!container) return;
     container.innerHTML = `<p style="color:var(--muted); font-size:14px; padding:20px 0;">Carregando...</p>`;
+    homeInicialAtiva = true;
+    filmesAtuais = [];
 
 
     const [
@@ -667,8 +726,6 @@ async function carregarHome() {
 }
 
 atualizarCards();
+ativarVisualCategoriaSelect();
 carregarGeneros().then(() => processarSugestaoPendente());
-
-if (!temSugestaoPendente) {
-    carregarHome();
-}
+carregarHome();

@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="header">
+    <header class="header" role="banner">
         <a href="index.html" class="logo-link"><h1>Cine<strong>List</strong></h1></a>
         <nav class="menu">
             <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
@@ -16,25 +16,27 @@
             <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
             <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
             <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
-            <a href="sugestoes.html" class="active">Sugestões <span class="menu-star">✦</span></a>
+            <a href="sugestoes.html">Sugestões <span class="menu-star">✦</span></a>
         </nav>
     </header>
 
     <main>
-        <div id="todos" style="margin-bottom: 24px;">
+        <section id="todos" class="page-intro">
             <h2>Sugestões para você</h2>
-            <div id="pesquisa" style="gap:8px;">
-                <button id="btn-filmes-sug" class="toggle-btn active" onclick="setTipoSug('filme')">Filmes</button>
-                <button id="btn-series-sug" class="toggle-btn" onclick="setTipoSug('serie')">Séries</button>
+            <div id="pesquisa" class="toggle-group" aria-label="Alternar tipo de sugestão">
+                <button id="btn-filmes-sug" type="button" class="toggle-btn active">Filmes</button>
+                <button id="btn-series-sug" type="button" class="toggle-btn">Séries</button>
             </div>
-        </div>
+        </section>
 
-        <div id="generos-favoritos" style="margin-bottom: 24px;"></div>
+        <section id="generos-favoritos" class="suggestion-meta" aria-live="polite"></section>
 
-        <div id="secao-sugestoes"></div>
-        <div id="secao-trakt" style="margin-top: 40px;"></div>
+        <section id="secao-sugestoes" aria-live="polite" aria-label="Sugestões personalizadas"></section>
+        <section id="secao-trakt" class="suggestion-trending" aria-live="polite" aria-label="Títulos em alta"></section>
     </main>
 
+    <script src="auth.js"></script>
+    <script src="ui_shared.js"></script>
     <script src="nav_counts.js"></script>
     <script src="sugestoes_script.js"></script>
 </body>

@@ -5,6 +5,21 @@ const abrirBtn = document.getElementById("adicionarModal");
 const fecharBtn = document.getElementById("fecharModal");
 const buscador = document.getElementById("buscador");
 
+function veioDeSugestoes() {
+    return sessionStorage.getItem("origem_modal_sugestao") === "sugestoes";
+}
+
+function limparOrigemSugestoes() {
+    sessionStorage.removeItem("origem_modal_sugestao");
+}
+
+function voltarParaSugestoesSePreciso() {
+    if (!veioDeSugestoes()) return false;
+    limparOrigemSugestoes();
+    window.location.href = "sugestoes.html";
+    return true;
+}
+
 let serieSelecionada = null;
 let filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
 let seriesAtuais = [];
@@ -183,11 +198,23 @@ function aplicarFiltroGenero() {
 abrirBtn.addEventListener("click", () => {
     serieSelecionada = null;
     limparModal();
-    modal.classList.add("active");
+    abrirModalAcessivel("modal", abrirBtn);
 });
 
-fecharBtn.addEventListener("click", () => modal.classList.remove("active"));
-modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("active"); });
+fecharBtn.addEventListener("click", () => {
+    fecharModalAcessivel("modal");
+    if (!voltarParaSugestoesSePreciso()) {
+        limparOrigemSugestoes();
+    }
+});
+modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+        fecharModalAcessivel("modal");
+        if (!voltarParaSugestoesSePreciso()) {
+            limparOrigemSugestoes();
+        }
+    }
+});
 
 function limparModal() {
     document.getElementById("tituloFilme").innerText = "Adicionar série";
@@ -197,6 +224,7 @@ function limparModal() {
     document.getElementById("suaNota").innerText = "";
     document.getElementById("infoExtra").innerText = "";
     document.getElementById("categoriaFilme").value = "Favorito";
+    atualizarVisualCategoriaSelect();
     document.getElementById("watchlist").checked = false;
     notaGeral = 0;
     atualizarEstrelasGeral(0);
@@ -261,9 +289,6 @@ async function processarSugestaoPendente() {
             throw new Error("Série não encontrada");
         }
 
-        seriesAtuais = [normalizarSerie(serie)];
-        filtroGeneroAtivo = null;
-        renderizarSeries(seriesAtuais);
         if (sugestao.temporada1) {
             hidratarTemporadaPrefetch(sugestao.temporada1);
         }
@@ -287,30 +312,19 @@ function renderizarSeries(lista) {
     }
     lista.forEach(item => {
         const serie = normalizarSerie(item);
-        const poster = serie.poster_path
-            ? `https://image.tmdb.org/t/p/w500${serie.poster_path}`
-            : "https://via.placeholder.com/250x350?text=Sem+Imagem";
         const generosTexto = (serie.genre_ids || []).slice(0, 2).map(id => mapaGeneros[id] || "").filter(Boolean).join(", ") || "—";
-        const titulo = serie.name || serie.title || "Sem título";
         const ano = (serie.first_air_date || "").slice(0, 4) || "—";
         const salvo = filmesSalvos.find(f => f.id === serie.id && f.tipo === "serie");
-        const badgeStatus = salvo ? `<span class="status">${salvo.categoria}</span>` : "";
-        const badgeTipo = `<span class="badge-tipo badge-serie">Série</span>`;
-        const div = document.createElement("div");
-        div.classList.add("movie");
-        div.innerHTML = `
-            <img src="${poster}" alt="${titulo}">
-            ${badgeStatus}
-            ${badgeTipo}
-            <div class="info">
-                <h3 class="nome">${titulo}</h3>
-                <span class="diretor">${ano}</span>
-                <span class="genero">${generosTexto}</span>
-                <span class="nota-tmdb">⭐ ${serie.vote_average?.toFixed(1) || "0"}</span>
-            </div>
-        `;
-        div.addEventListener("click", () => abrirModalSerie(serie));
-        container.appendChild(div);
+        const card = criarCardMidia({
+            item: serie,
+            tipo: "serie",
+            salvo,
+            ano,
+            generosTexto,
+            notaTexto: `⭐ ${serie.vote_average?.toFixed(1) || "0"}`,
+            onActivate: () => abrirModalSerie(serie)
+        });
+        container.appendChild(card);
     });
     atualizarContador();
 }
@@ -340,6 +354,7 @@ async function abrirModalSerie(serie) {
     atualizarEstrelasGeral(notaGeral);
     document.getElementById("watchlist").checked = salvo?.watchlist || false;
     document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
+    atualizarVisualCategoriaSelect();
 
     if (salvo?.temporadas) {
         salvo.temporadas.forEach(t => { temporadasModal[t.numero] = t; });
@@ -350,7 +365,7 @@ async function abrirModalSerie(serie) {
         }
     });
 
-    modal.classList.add("active");
+    abrirModalAcessivel("modal", document.activeElement);
     const temFallbackLocal = renderizarTemporadasSalvasNoModal(serie.id);
 
     if (!temFallbackLocal) {
@@ -384,33 +399,24 @@ async function abrirModalSerie(serie) {
 
 
 function atualizarEstrelasGeral(nota) {
-    document.querySelectorAll("#rating-geral span").forEach(s => {
-        s.classList.toggle("active", Number(s.dataset.value) <= nota);
-    });
+    window.atualizarEstrelas(document.getElementById("rating-geral"), nota);
 }
 
-document.querySelectorAll("#rating-geral span").forEach(star => {
-    star.addEventListener("click", () => {
-        notaGeral = Number(star.dataset.value);
-        atualizarEstrelasGeral(notaGeral);
-        document.getElementById("suaNota").innerText = "⭐ Sua nota geral: " + notaGeral;
-    });
+window.ativarEstrelas(document.getElementById("rating-geral"), (nota) => {
+    notaGeral = nota;
+    atualizarEstrelasGeral(notaGeral);
+    document.getElementById("suaNota").innerText = "⭐ Sua nota geral: " + notaGeral;
 });
 
 
 function atualizarEstrelasTemporada(nota) {
-    document.querySelectorAll("#rating-temporada span").forEach(s => {
-        s.classList.toggle("active", Number(s.dataset.value) <= nota);
-    });
+    window.atualizarEstrelas(document.getElementById("rating-temporada"), nota);
 }
 
-document.querySelectorAll("#rating-temporada span").forEach(star => {
-    star.addEventListener("click", () => {
-        const val = Number(star.dataset.value);
-        if (!temporadasModal[temporadaAtiva]) return;
-        temporadasModal[temporadaAtiva].nota = val;
-        atualizarEstrelasTemporada(val);
-    });
+window.ativarEstrelas(document.getElementById("rating-temporada"), (val) => {
+    if (!temporadasModal[temporadaAtiva]) return;
+    temporadasModal[temporadaAtiva].nota = val;
+    atualizarEstrelasTemporada(val);
 });
 
 
@@ -420,8 +426,10 @@ function renderizarAbasTemporadas(serieId) {
     tabs.innerHTML = "";
     for (let i = 1; i <= totalTemporadas; i++) {
         const btn = document.createElement("button");
+        btn.type = "button";
         btn.classList.add("s-tab");
         if (i === temporadaAtiva) btn.classList.add("active");
+        btn.setAttribute("aria-pressed", i === temporadaAtiva ? "true" : "false");
         btn.innerText = `T${i}`;
         btn.addEventListener("click", () => trocarTemporada(serieId, i));
         tabs.appendChild(btn);
@@ -432,6 +440,7 @@ async function trocarTemporada(serieId, numero) {
     temporadaAtiva = numero;
     document.querySelectorAll(".s-tab").forEach((btn, idx) => {
         btn.classList.toggle("active", idx + 1 === numero);
+        btn.setAttribute("aria-pressed", idx + 1 === numero ? "true" : "false");
     });
     const label = document.getElementById("label-nota-temporada");
     if (label) label.innerText = `Nota da temporada ${numero}`;
@@ -486,7 +495,6 @@ async function carregarTemporada(serieId, numero) {
             temporadasModal[numero].episodios.sort((a, b) => a.numero - b.numero);
         }
 
-        // Mostrar nota salva da temporada
         atualizarEstrelasTemporada(temporadasModal[numero].nota || 0);
         const label = document.getElementById("label-nota-temporada");
         if (label) label.innerText = `Nota da temporada ${numero}`;
@@ -539,14 +547,30 @@ function renderizarEpisodios(numTemporada) {
         const numT = Number(container.dataset.temporada);
         const numEp = Number(container.dataset.ep);
         container.querySelectorAll(".ep-star").forEach(star => {
-            star.addEventListener("click", () => {
+            star.setAttribute("role", "button");
+            star.setAttribute("tabindex", "0");
+            star.setAttribute("aria-label", `Dar nota ${star.dataset.val} para o episódio ${numEp}`);
+
+            const aplicarNota = () => {
                 const val = Number(star.dataset.val);
                 const ep = temporadasModal[numT]?.episodios.find(e => e.numero === numEp);
                 if (ep) ep.nota = val;
                 container.querySelectorAll(".ep-star").forEach(s => {
                     s.classList.toggle("active", Number(s.dataset.val) <= val);
+                    s.setAttribute("aria-pressed", Number(s.dataset.val) <= val ? "true" : "false");
                 });
                 atualizarMediaTemporada(numT);
+            };
+
+            star.addEventListener("click", () => {
+                aplicarNota();
+            });
+
+            star.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    aplicarNota();
+                }
             });
         });
     });
@@ -598,7 +622,9 @@ document.getElementById("salvar").addEventListener("click", () => {
     atualizarCards();
     if (typeof atualizarNavCounts === "function") atualizarNavCounts();
     mostrarToast("Série salva com sucesso!");
-    modal.classList.remove("active");
+    fecharModalAcessivel("modal");
+
+    limparOrigemSugestoes();
 
     if (buscador.value.trim().length > 0 && seriesAtuais.length > 0) {
         renderizarSeries(filtroGeneroAtivo
@@ -680,22 +706,11 @@ function atualizarContador() {
     if (el) el.innerText = document.querySelectorAll(".movie").length;
 }
 
-function mostrarToast(mensagem) {
-    let toast = document.getElementById("toast");
-    if (!toast) {
-        toast = document.createElement("div");
-        toast.id = "toast";
-        document.body.appendChild(toast);
-    }
-    toast.innerText = mensagem;
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2500);
-}
-
 atualizarCards();
+ativarVisualCategoriaSelect();
 carregarGeneros().then(() => {
+    carregarSeriesSalvas();
     if (temSugestaoPendente) {
         return processarSugestaoPendente();
     }
-    carregarSeriesSalvas();
 });

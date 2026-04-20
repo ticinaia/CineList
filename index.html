@@ -8,10 +8,10 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header class="header">
+    <header class="header" role="banner">
         <a href="index.html" class="logo-link"><h1>Cine<strong>List</strong></h1></a>
         <nav class="menu">
-            <a href="index.html" class="active">Filmes <span id="nav-count-filmes">0</span></a>
+            <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
             <a href="series.html">Séries <span id="nav-count-series">0</span></a>
             <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
             <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
@@ -21,16 +21,17 @@
     </header>
 
     <main>
-        <div id="todos">
+        <section id="todos" aria-label="Resumo e busca de filmes">
             <h2>Meus filmes <span id="contador">0</span></h2>
-            <div id="pesquisa">
+            <div id="pesquisa" role="search" aria-label="Buscar filmes">
+                <label class="sr-only" for="buscador">Buscar filmes</label>
                 <input type="text" id="buscador" placeholder="Buscar filmes...">
-                <button id="buscar">Buscar</button>
+                <button id="buscar" type="button">Buscar</button>
                 <button type="button" id="adicionarModal">Adicionar</button>
             </div>
-        </div>
+        </section>
 
-        <div class="cards">
+        <section class="cards" aria-label="Indicadores da biblioteca de filmes">
             <div class="card">
                 <p class="label">Exibindo</p>
                 <h2>0</h2>
@@ -46,15 +47,15 @@
                 <h2>0</h2>
                 <span>de 5 estrelas</span>
             </div>
-        </div>
+        </section>
 
-        <div class="filtros"></div>
+        <section class="filtros" aria-label="Filtrar filmes por gênero"></section>
         <br>
-        <div class="filmes"></div>
+        <section class="filmes" aria-live="polite" aria-label="Lista de filmes"></section>
     </main>
 
-    <div id="modal">
-        <div class="modal-content">
+    <div id="modal" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="tituloFilme">
             <h2 id="tituloFilme"></h2>
             <img id="posterDetalhe" style="width:100%; border-radius:10px;" alt="">
             <p id="descricaoFilme"></p>
@@ -90,6 +91,8 @@
         </div>
     </div>
 
+    <script src="auth.js"></script>
+    <script src="ui_shared.js"></script>
     <script src="nav_counts.js"></script>
     <script src="script.js"></script>
 </body>

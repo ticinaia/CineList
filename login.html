@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineList — Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page">
+    <main class="auth-shell">
+        <section class="auth-hero">
+            <p class="auth-kicker">CineList</p>
+            <h1>Seu cantinho para organizar filmes e series.</h1>
+            <p>Entre para salvar suas listas, acompanhar horas assistidas e receber sugestoes personalizadas.</p>
+        </section>
+
+        <section class="auth-card">
+            <div class="auth-tabs" role="tablist" aria-label="Entrar ou criar conta">
+                <button type="button" id="tab-login" class="toggle-btn active" role="tab" aria-selected="true" aria-controls="form-login">Login</button>
+                <button type="button" id="tab-cadastro" class="toggle-btn" role="tab" aria-selected="false" aria-controls="form-cadastro">Cadastro</button>
+            </div>
+
+            <form id="form-login" class="auth-form" aria-labelledby="tab-login">
+                <label for="login-email">E-mail</label>
+                <input id="login-email" type="email" required autocomplete="email" placeholder="voce@email.com">
+                <label for="login-senha">Senha</label>
+                <input id="login-senha" type="password" required autocomplete="current-password" placeholder="Sua senha">
+                <button type="submit" id="login-submit">Entrar</button>
+            </form>
+
+            <form id="form-cadastro" class="auth-form hidden" aria-labelledby="tab-cadastro">
+                <label for="cadastro-nome">Nome</label>
+                <input id="cadastro-nome" type="text" required autocomplete="name" placeholder="Seu nome">
+                <label for="cadastro-email">E-mail</label>
+                <input id="cadastro-email" type="email" required autocomplete="email" placeholder="voce@email.com">
+                <label for="cadastro-senha">Senha</label>
+                <input id="cadastro-senha" type="password" required autocomplete="new-password" placeholder="Crie uma senha">
+                <button type="submit" id="cadastro-submit">Criar conta</button>
+            </form>
+
+            <p id="auth-feedback" class="auth-feedback hidden" role="status" aria-live="polite"></p>
+        </section>
+    </main>
+
+    <script src="auth.js"></script>
+    <script>
+        const tabLogin = document.getElementById("tab-login");
+        const tabCadastro = document.getElementById("tab-cadastro");
+        const formLogin = document.getElementById("form-login");
+        const formCadastro = document.getElementById("form-cadastro");
+        const feedback = document.getElementById("auth-feedback");
+
+        function mostrarFeedback(mensagem, erro = false) {
+            feedback.textContent = mensagem;
+            feedback.classList.remove("hidden");
+            feedback.classList.toggle("auth-feedback-erro", erro);
+        }
+
+        function alternarAba(tipo) {
+            const loginAtivo = tipo === "login";
+            tabLogin.classList.toggle("active", loginAtivo);
+            tabCadastro.classList.toggle("active", !loginAtivo);
+            tabLogin.setAttribute("aria-selected", loginAtivo ? "true" : "false");
+            tabCadastro.setAttribute("aria-selected", loginAtivo ? "false" : "true");
+            formLogin.classList.toggle("hidden", !loginAtivo);
+            formCadastro.classList.toggle("hidden", loginAtivo);
+            feedback.classList.add("hidden");
+        }
+
+        tabLogin.addEventListener("click", () => alternarAba("login"));
+        tabCadastro.addEventListener("click", () => alternarAba("cadastro"));
+
+        formLogin.addEventListener("submit", (e) => {
+            e.preventDefault();
+            try {
+                autenticarUsuario(
+                    document.getElementById("login-email").value.trim(),
+                    document.getElementById("login-senha").value
+                );
+                window.location.href = "index.html";
+            } catch (err) {
+                mostrarFeedback(err.message, true);
+            }
+        });
+
+        formCadastro.addEventListener("submit", (e) => {
+            e.preventDefault();
+            try {
+                registrarUsuario(
+                    document.getElementById("cadastro-nome").value.trim(),
+                    document.getElementById("cadastro-email").value.trim(),
+                    document.getElementById("cadastro-senha").value
+                );
+                window.location.href = "index.html";
+            } catch (err) {
+                mostrarFeedback(err.message, true);
+            }
+        });
+    </script>
+</body>
+</html>
