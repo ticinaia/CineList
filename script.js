@@ -38,6 +38,7 @@ const temSugestaoPendente = (() => {
 let mapaGeneros      = {};
 let filtroGeneroAtivo = null;
 let homeInicialAtiva = true;
+let resumoCardAtivo = null;
 
 
 let temporadasModal  = {};
@@ -114,6 +115,122 @@ function aplicarFiltroGenero() {
     }
 }
 
+function atualizarCardsResumoAtivos() {
+    document.querySelectorAll(".summary-card").forEach(card => {
+        const ativo = card.dataset.summaryFilter === resumoCardAtivo;
+        card.classList.toggle("is-active", ativo);
+        card.setAttribute("aria-pressed", ativo ? "true" : "false");
+    });
+}
+
+function mostrarFeedbackCards(mensagem) {
+    const feedback = document.getElementById("cards-feedback");
+    if (!feedback) return;
+
+    if (!mensagem) {
+        feedback.classList.add("hidden");
+        feedback.innerHTML = "";
+        return;
+    }
+
+    feedback.innerHTML = `
+        <p>${mensagem}</p>
+        <button type="button" id="limpar-cards-feedback">Voltar ao padrão</button>
+    `;
+    feedback.classList.remove("hidden");
+    document.getElementById("limpar-cards-feedback")?.addEventListener("click", limparResumoCards);
+}
+
+function limparResumoCards() {
+    resumoCardAtivo = null;
+    atualizarCardsResumoAtivos();
+    mostrarFeedbackCards("");
+
+    const termo = buscador.value.trim();
+    if (termo.length >= 3) {
+        buscarItens(termo);
+        return;
+    }
+
+    if (termo.length === 0) {
+        carregarHome();
+    }
+}
+
+function limparFiltroGeneroVisual() {
+    filtroGeneroAtivo = null;
+    const filtroTodos = document.querySelector('.filtros .categoria a[data-id=""]');
+    if (filtroTodos) {
+        document.querySelectorAll(".filtros .categoria a").forEach(b => b.classList.remove("filtro-ativo"));
+        filtroTodos.classList.add("filtro-ativo");
+    }
+}
+
+function normalizarFilmeSalvo(filme) {
+    return {
+        id: filme.id,
+        title: filme.titulo || "Sem título",
+        poster_path: filme.imagem || "",
+        overview: filme.descricao || "",
+        genre_ids: filme.generoIds || [],
+        vote_average: typeof filme.nota === "number" ? filme.nota : 0,
+        tipo: "filme"
+    };
+}
+
+function obterFilmesDoResumo(filtro) {
+    const soFilmes = filmesSalvos.filter(f => f.tipo !== "serie");
+    switch (filtro) {
+        case "favoritos":
+            return soFilmes.filter(f => f.categoria === "Favorito");
+        case "assistidos":
+            return soFilmes.filter(f => f.categoria === "Assistido");
+        case "avaliados":
+            return soFilmes.filter(f => (f.nota || 0) > 0);
+        case "total":
+        default:
+            return soFilmes;
+    }
+}
+
+function aplicarResumoCards(filtro) {
+    filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
+    resumoCardAtivo = filtro;
+    atualizarCardsResumoAtivos();
+    limparFiltroGeneroVisual();
+    homeInicialAtiva = false;
+    buscador.value = "";
+
+    const itens = obterFilmesDoResumo(filtro).map(normalizarFilmeSalvo);
+    const descricoes = {
+        total: "Mostrando todos os filmes salvos na sua biblioteca.",
+        favoritos: "Mostrando os filmes marcados como favoritos.",
+        assistidos: "Mostrando os filmes que entram na contagem de assistidos.",
+        avaliados: "Mostrando os filmes que entram no cálculo da média."
+    };
+
+    filmesAtuais = itens;
+    renderizarFilmes(itens);
+    mostrarFeedbackCards(descricoes[filtro] || "");
+}
+
+function configurarCardsResumo() {
+    document.querySelectorAll(".summary-card").forEach(card => {
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        card.setAttribute("aria-pressed", "false");
+
+        const ativar = () => aplicarResumoCards(card.dataset.summaryFilter);
+        card.addEventListener("click", ativar);
+        card.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                ativar();
+            }
+        });
+    });
+}
+
 
 abrirBtn.addEventListener("click", () => {
     filmeSelecionado = null;
@@ -169,6 +286,10 @@ document.getElementById("buscar").addEventListener("click", () => {
 });
 
 async function buscarItens(query) {
+    resumoCardAtivo = null;
+    atualizarCardsResumoAtivos();
+    mostrarFeedbackCards("");
+
     if (query.length === 0) {
         homeInicialAtiva = true;
         filtroGeneroAtivo = null;
@@ -519,17 +640,26 @@ document.getElementById("salvar").addEventListener("click", () => {
 
 function atualizarCards() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
-    const soFilmes  = filmesSalvos.filter(f => f.tipo !== "serie");
+    const soFilmes = filmesSalvos.filter(f => f.tipo !== "serie");
+    const filmesFavoritos = soFilmes.filter(f => f.categoria === "Favorito");
     const filmesAssistidos = soFilmes.filter(f => f.categoria === "Assistido");
-    const total     = soFilmes.length;
-    const assistidos= filmesAssistidos.length;
-    const media     = total > 0
-        ? (soFilmes.reduce((acc, f) => acc + (f.nota || 0), 0) / total).toFixed(1)
+    const filmesAvaliados = soFilmes.filter(f => (f.nota || 0) > 0);
+    const total = soFilmes.length;
+    const favoritos = filmesFavoritos.length;
+    const assistidos = filmesAssistidos.length;
+    const media = filmesAvaliados.length > 0
+        ? (filmesAvaliados.reduce((acc, f) => acc + (f.nota || 0), 0) / filmesAvaliados.length).toFixed(1)
         : 0;
-    const h2s = document.querySelectorAll(".card h2");
-    if (h2s[0]) h2s[0].innerText = total;
-    if (h2s[1]) h2s[1].innerText = assistidos;
-    if (h2s[2]) h2s[2].innerText = media;
+
+    const setTexto = (id, valor) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = valor;
+    };
+
+    setTexto("card-total", total);
+    setTexto("card-favoritos", favoritos);
+    setTexto("card-assistidos", assistidos);
+    setTexto("card-media", media);
 
     calcularHorasTotais(filmesAssistidos);
 }
@@ -727,5 +857,6 @@ async function carregarHome() {
 
 atualizarCards();
 ativarVisualCategoriaSelect();
+configurarCardsResumo();
 carregarGeneros().then(() => processarSugestaoPendente());
 carregarHome();

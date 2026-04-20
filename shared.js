@@ -7,6 +7,23 @@ let categoriaAtual = "";
 let filtroAtual = "";
 const cacheDuracoes = JSON.parse(localStorage.getItem("cache_duracoes") || "{}");
 const cacheDuracoesSeries = JSON.parse(localStorage.getItem("cache_duracoes_series") || "{}");
+const DURACAO_PADRAO_EPISODIO = 45;
+
+function limparCacheDuracoesSeriesInvalidas() {
+    let alterado = false;
+    Object.keys(cacheDuracoesSeries).forEach((id) => {
+        if ((cacheDuracoesSeries[id] || 0) <= 0) {
+            delete cacheDuracoesSeries[id];
+            alterado = true;
+        }
+    });
+
+    if (alterado) {
+        localStorage.setItem("cache_duracoes_series", JSON.stringify(cacheDuracoesSeries));
+    }
+}
+
+limparCacheDuracoesSeriesInvalidas();
 let watchlistDragAtivo = false;
 let watchlistDragInicioX = 0;
 let watchlistScrollInicio = 0;
@@ -246,19 +263,43 @@ async function buscarDuracaoFilme(tmdbId) {
     }
 }
 
-async function buscarDuracaoSerie(tmdbId) {
-    if (cacheDuracoesSeries[tmdbId] !== undefined) return cacheDuracoesSeries[tmdbId];
+async function buscarDuracaoSerie(serieSalva) {
+    const tmdbId = typeof serieSalva === "object" ? serieSalva?.id : serieSalva;
+    if (!tmdbId) return 0;
+    if ((cacheDuracoesSeries[tmdbId] || 0) > 0) return cacheDuracoesSeries[tmdbId];
+
+    const episodiosSalvos = Array.isArray(serieSalva?.temporadas)
+        ? serieSalva.temporadas.reduce((acc, temporada) => {
+            const qtd = Array.isArray(temporada.episodios) ? temporada.episodios.length : 0;
+            return acc + qtd;
+        }, 0)
+        : 0;
 
     try {
         const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&language=pt-BR`);
         const data = await res.json();
-        const runtimeMedio = Array.isArray(data.episode_run_time) ? (data.episode_run_time[0] || 0) : 0;
-        const episodios = data.number_of_episodes || 0;
-        const minutos = runtimeMedio * episodios;
-        cacheDuracoesSeries[tmdbId] = minutos;
-        localStorage.setItem("cache_duracoes_series", JSON.stringify(cacheDuracoesSeries));
+        const tempos = Array.isArray(data.episode_run_time)
+            ? data.episode_run_time.filter(valor => Number(valor) > 0)
+            : [];
+        const runtimeMedio = tempos[0] || 0;
+        const episodiosTotais = Number(data.number_of_episodes) || 0;
+        const episodiosBase = episodiosTotais || episodiosSalvos;
+        const runtimeBase = runtimeMedio || (episodiosSalvos > 0 ? DURACAO_PADRAO_EPISODIO : 0);
+        const minutos = runtimeBase > 0 && episodiosBase > 0
+            ? runtimeBase * episodiosBase
+            : 0;
+        if (minutos > 0) {
+            cacheDuracoesSeries[tmdbId] = minutos;
+            localStorage.setItem("cache_duracoes_series", JSON.stringify(cacheDuracoesSeries));
+        }
         return minutos;
     } catch {
+        if (episodiosSalvos > 0) {
+            const minutosEstimados = episodiosSalvos * DURACAO_PADRAO_EPISODIO;
+            cacheDuracoesSeries[tmdbId] = minutosEstimados;
+            localStorage.setItem("cache_duracoes_series", JSON.stringify(cacheDuracoesSeries));
+            return minutosEstimados;
+        }
         return 0;
     }
 }
@@ -276,7 +317,7 @@ async function calcularHorasAssistidos(lista) {
     const semCache = lista.filter(item => {
         if (!item.id) return false;
         return item.tipo === "serie"
-            ? cacheDuracoesSeries[item.id] === undefined
+            ? (cacheDuracoesSeries[item.id] || 0) <= 0
             : cacheDuracoes[item.id] === undefined;
     });
     if (semCache.length === 0) return;
@@ -285,7 +326,7 @@ async function calcularHorasAssistidos(lista) {
     for (let i = 0; i < semCache.length; i += lote) {
         const grupo = semCache.slice(i, i + lote);
         await Promise.all(grupo.map(item => item.tipo === "serie"
-            ? buscarDuracaoSerie(item.id)
+            ? buscarDuracaoSerie(item)
             : buscarDuracaoFilme(item.id)
         ));
 

@@ -32,27 +32,33 @@
         </section>
 
         <section class="cards" aria-label="Indicadores da biblioteca de séries">
-            <div class="card">
-                <p class="label">Exibindo</p>
-                <h2>0</h2>
+            <div class="card summary-card" data-summary-filter="total">
+                <p class="label">Total</p>
+                <h2 id="card-total">0</h2>
                 <span>séries</span>
             </div>
-            <div class="card">
+            <div class="card summary-card" data-summary-filter="favoritas">
+                <p class="label">Favoritas</p>
+                <h2 id="card-favoritas">0</h2>
+                <span>séries</span>
+            </div>
+            <div class="card summary-card" data-summary-filter="assistidas">
                 <p class="label">Assistidas</p>
-                <h2>0</h2>
+                <h2 id="card-assistidas">0</h2>
                 <span>séries</span>
             </div>
-            <div class="card">
+            <div class="card summary-card" data-summary-filter="avaliadas">
                 <p class="label">Média das avaliações</p>
-                <h2>0</h2>
+                <h2 id="card-media">0</h2>
                 <span>de 5 estrelas</span>
             </div>
-            <div class="card">
+            <div class="card summary-card" data-summary-filter="horas">
                 <p class="label">Horas assistidas</p>
                 <h2 id="card-horas">—</h2>
                 <span>horas no total</span>
             </div>
         </section>
+        <div id="cards-feedback" class="cards-feedback hidden" aria-live="polite"></div>
 
         <section class="filtros" aria-label="Filtrar séries por gênero"></section>
         <br>

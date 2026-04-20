@@ -32,22 +32,28 @@
         </section>
 
         <section class="cards" aria-label="Indicadores da biblioteca de filmes">
-            <div class="card">
-                <p class="label">Exibindo</p>
-                <h2>0</h2>
+            <div class="card summary-card" data-summary-filter="total">
+                <p class="label">Total</p>
+                <h2 id="card-total">0</h2>
                 <span>filmes</span>
             </div>
-            <div class="card">
+            <div class="card summary-card" data-summary-filter="favoritos">
+                <p class="label">Favoritos</p>
+                <h2 id="card-favoritos">0</h2>
+                <span>filmes</span>
+            </div>
+            <div class="card summary-card" data-summary-filter="assistidos">
                 <p class="label">Assistidos</p>
-                <h2>0</h2>
+                <h2 id="card-assistidos">0</h2>
                 <span>filmes</span>
             </div>
-            <div class="card">
+            <div class="card summary-card" data-summary-filter="avaliados">
                 <p class="label">Média das avaliações</p>
-                <h2>0</h2>
+                <h2 id="card-media">0</h2>
                 <span>de 5 estrelas</span>
             </div>
         </section>
+        <div id="cards-feedback" class="cards-feedback hidden" aria-live="polite"></div>
 
         <section class="filtros" aria-label="Filtrar filmes por gênero"></section>
         <br>
