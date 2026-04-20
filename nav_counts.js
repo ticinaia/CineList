@@ -1,4 +1,5 @@
-// nav-counts.js — inclua em TODAS as páginas para manter os badges atualizados
+// nav-counts.js — inclua em TODAS as páginas
+
 function atualizarNavCounts() {
     const todos = JSON.parse(localStorage.getItem("filmes")) || [];
     const filmes = todos.filter(f => f.tipo !== "serie");
@@ -15,4 +16,15 @@ function atualizarNavCounts() {
     set("nav-count-assistindo", assistindo.length);
 }
 
+// Ao carregar a página
 document.addEventListener("DOMContentLoaded", atualizarNavCounts);
+
+// Quando outra aba salva algo
+window.addEventListener("storage", atualizarNavCounts);
+
+// Intercepta localStorage.setItem para detectar mudanças na mesma aba
+const _setItem = localStorage.setItem.bind(localStorage);
+localStorage.setItem = function(key, value) {
+    _setItem(key, value);
+    if (key === "filmes") atualizarNavCounts();
+};

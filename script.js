@@ -1,4 +1,5 @@
 const API_KEY = "137645a15bec14eae77e0f109056e7e3";
+//minha chave de api para fazer a busca de filmes e series
 
 const modal = document.getElementById("modal");
 const abrirBtn = document.getElementById("adicionarModal");
@@ -7,19 +8,23 @@ const buscador = document.getElementById("buscador");
 
 let filmeSelecionado = null;
 let filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
+//pega os nfilmes salvos e transforme em objeto de js e se o resultado for null ele retorna uma lista vazia []
 let filmesAtuais = [];
 let notaSelecionada = 0;
 const tipoAtivo = "filme";
 
+// Gêneros
 let mapaGeneros = {};
 let filtroGeneroAtivo = null;
 
-let temporadasModal = {}; 
+// Dados de temporadas do item atual no modal
+let temporadasModal = {}; // { numTemporada: { nota: N, episodios: [{numero, nota}] } }
 let temporadaAtiva = 1;
 let totalTemporadas = 0;
 
 
 
+// ---------------- GÊNEROS ----------------
 
 async function carregarGeneros() {
     try {
@@ -84,6 +89,7 @@ function aplicarFiltroGenero() {
     }
 }
 
+// ---------------- MODAL ABRIR/FECHAR ----------------
 
 abrirBtn.addEventListener("click", () => {
     filmeSelecionado = null;
@@ -115,6 +121,7 @@ function limparModal() {
     totalTemporadas = 0;
 }
 
+// ---------------- BUSCA ----------------
 
 let timeout;
 
@@ -143,6 +150,7 @@ async function buscarItens(query) {
     }
 }
 
+// ---------------- RENDER CARDS ----------------
 
 function renderizarFilmes(lista) {
     const container = document.querySelector(".filmes");
@@ -195,6 +203,7 @@ function renderizarFilmes(lista) {
     atualizarContador();
 }
 
+// ---------------- MODAL FILME ----------------
 
 function abrirModalFilme(filme) {
     filmeSelecionado = { ...filme, tipo: "filme" };
@@ -223,6 +232,7 @@ function abrirModalFilme(filme) {
     modal.classList.add("active");
 }
 
+// ---------------- MODAL SÉRIE ----------------
 
 async function abrirModalSerie(serie) {
     filmeSelecionado = { ...serie, tipo: "serie" };
@@ -258,6 +268,7 @@ async function abrirModalSerie(serie) {
         const detalhes = await res.json();
         totalTemporadas = detalhes.number_of_seasons || 1;
 
+        // Restaurar notas salvas
         if (salvo?.temporadas) {
             salvo.temporadas.forEach(t => { temporadasModal[t.numero] = t; });
         }
@@ -273,6 +284,7 @@ async function abrirModalSerie(serie) {
     modal.classList.add("active");
 }
 
+// ---------------- TEMPORADAS ----------------
 
 function renderizarAbasTemporadas(serieId) {
     const tabs = document.getElementById("seasons-tabs");
@@ -306,6 +318,7 @@ async function carregarTemporada(serieId, numero) {
         const data = await res.json();
         const episodios = data.episodes || [];
 
+        // Inicializar temporada se ainda não existe
         if (!temporadasModal[numero]) {
             temporadasModal[numero] = {
                 numero,
@@ -313,6 +326,7 @@ async function carregarTemporada(serieId, numero) {
                 episodios: episodios.map(ep => ({ numero: ep.episode_number, nome: ep.name, nota: 0 }))
             };
         } else {
+            // Garantir que todos os episódios existem
             episodios.forEach(ep => {
                 const existe = temporadasModal[numero].episodios.find(e => e.numero === ep.episode_number);
                 if (!existe) temporadasModal[numero].episodios.push({ numero: ep.episode_number, nome: ep.name, nota: 0 });
@@ -348,6 +362,7 @@ function renderizarEpisodios(numTemporada) {
         lista.appendChild(row);
     });
 
+    // Eventos das estrelas dos episódios
     lista.querySelectorAll(".ep-stars").forEach(container => {
         const numT = Number(container.dataset.temporada);
         const numEp = Number(container.dataset.ep);
@@ -368,6 +383,8 @@ function renderizarEpisodios(numTemporada) {
 }
 
 function renderizarNotaTemporada(numTemporada) {
+    // Nota geral da temporada já fica nas estrelas principais do modal quando a aba está ativa
+    // Usamos um campo separado de nota por temporada dentro de temporadasModal
 }
 
 function atualizarMediaTemporada(numTemporada) {
@@ -379,6 +396,7 @@ function atualizarMediaTemporada(numTemporada) {
     if (el) el.innerText = `Média dos episódios da T${numTemporada}: ${media} ★`;
 }
 
+// ---------------- ESTRELAS GERAL ----------------
 
 function ativarEstrelas() {
     document.querySelectorAll(".rating span").forEach(star => {
@@ -397,6 +415,7 @@ function ativarEstrelas() {
 
 ativarEstrelas();
 
+// ---------------- SALVAR ----------------
 
 document.getElementById("salvar").addEventListener("click", () => {
     if (!filmeSelecionado) {
@@ -432,16 +451,21 @@ document.getElementById("salvar").addEventListener("click", () => {
 
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
     atualizarCards();
-    atualizarNavCounts();
+    if (typeof atualizarNavCounts === "function") atualizarNavCounts();
     mostrarToast("Salvo com sucesso!");
     modal.classList.remove("active");
 
-    renderizarFilmes(filtroGeneroAtivo
-        ? filmesAtuais.filter(f => f.genre_ids?.includes(filtroGeneroAtivo))
-        : filmesAtuais
-    );
+    if (filmesAtuais.length > 0) {
+        renderizarFilmes(filtroGeneroAtivo
+            ? filmesAtuais.filter(f => f.genre_ids?.includes(filtroGeneroAtivo))
+            : filmesAtuais
+        );
+    } else {
+        carregarPopulares();
+    }
 });
 
+// ---------------- CARDS STATS ----------------
 
 function atualizarCards() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
@@ -458,12 +482,14 @@ function atualizarCards() {
     if (h2s[2]) h2s[2].innerText = media;
 }
 
+// ---------------- CONTADOR ----------------
 
 function atualizarContador() {
     const el = document.getElementById("contador");
     if (el) el.innerText = document.querySelectorAll(".movie").length;
 }
 
+// ---------------- TOAST ----------------
 
 function mostrarToast(mensagem) {
     let toast = document.getElementById("toast");
@@ -477,6 +503,78 @@ function mostrarToast(mensagem) {
     setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
+// ---------------- INICIALIZAR ----------------
 
 atualizarCards();
 carregarGeneros();
+
+// ---------------- POPULARES NA HOME ----------------
+
+async function carregarPopulares() {
+    try {
+        const [resFilmes, resSeries] = await Promise.all([
+            fetch(`https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=pt-BR&page=1`),
+            fetch(`https://api.themoviedb.org/3/tv/popular?api_key=${API_KEY}&language=pt-BR&page=1`)
+        ]);
+        const dataFilmes = await resFilmes.json();
+        const dataSeries = await resSeries.json();
+
+        const filmes = (dataFilmes.results || []).slice(0, 6);
+        const series = (dataSeries.results || []).slice(0, 6);
+
+        const container = document.querySelector(".filmes");
+        if (!container) return;
+        container.innerHTML = "";
+
+        const tituloFilmes = document.createElement("div");
+        tituloFilmes.style.cssText = "width:100%; margin-bottom:8px;";
+        tituloFilmes.innerHTML = `<h3 style="font-family:'DM Serif Display',serif; font-size:18px; font-weight:400; color:var(--muted);">🎬 Filmes populares</h3>`;
+        container.appendChild(tituloFilmes);
+
+        const rowFilmes = document.createElement("div");
+        rowFilmes.style.cssText = "display:flex; flex-wrap:wrap; gap:20px; width:100%; margin-bottom:32px;";
+        filmes.forEach(item => rowFilmes.appendChild(criarCard(item, "filme")));
+        container.appendChild(rowFilmes);
+
+        const tituloSeries = document.createElement("div");
+        tituloSeries.style.cssText = "width:100%; margin-bottom:8px;";
+        tituloSeries.innerHTML = `<h3 style="font-family:'DM Serif Display',serif; font-size:18px; font-weight:400; color:var(--muted);">📺 Séries populares</h3>`;
+        container.appendChild(tituloSeries);
+
+        const rowSeries = document.createElement("div");
+        rowSeries.style.cssText = "display:flex; flex-wrap:wrap; gap:20px; width:100%;";
+        series.forEach(item => rowSeries.appendChild(criarCard(item, "serie")));
+        container.appendChild(rowSeries);
+
+    } catch (err) {
+        console.error("Erro ao carregar populares:", err);
+    }
+}
+
+function criarCard(item, tipo) {
+    const poster = item.poster_path
+        ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+        : "https://via.placeholder.com/250x350?text=Sem+Imagem";
+    const titulo = item.title || item.name || "Sem título";
+    const ano = (item.release_date || item.first_air_date || "").slice(0, 4) || "—";
+    const nota = item.vote_average?.toFixed(1) || "0";
+    const salvo = filmesSalvos.find(f => f.id === item.id && f.tipo === tipo);
+    const badgeStatus = salvo ? `<span class="status">${salvo.categoria}</span>` : "";
+
+    const div = document.createElement("div");
+    div.classList.add("movie");
+    div.innerHTML = `
+        <img src="${poster}" alt="${titulo}">
+        ${badgeStatus}
+        <span class="badge-tipo ${tipo === 'filme' ? 'badge-filme' : 'badge-serie'}">${tipo === 'filme' ? 'Filme' : 'Série'}</span>
+        <div class="info">
+            <h3 class="nome">${titulo}</h3>
+            <span class="diretor">${ano}</span>
+            <span class="nota-tmdb">⭐ ${nota}</span>
+        </div>
+    `;
+    div.addEventListener("click", () => tipo === "filme" ? abrirModalFilme(item) : abrirModalSerie(item));
+    return div;
+}
+
+carregarPopulares();

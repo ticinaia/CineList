@@ -62,8 +62,9 @@
             <p id="suaNota"></p>
             <p id="infoExtra"></p>
 
-            <label>Nota geral</label>
-            <div class="rating">
+            <!-- Nota geral da série -->
+            <label>Nota geral da série</label>
+            <div class="rating" id="rating-geral">
                 <span data-value="1">★</span>
                 <span data-value="2">★</span>
                 <span data-value="3">★</span>
@@ -71,13 +72,26 @@
                 <span data-value="5">★</span>
             </div>
 
-            <div id="secao-series">
-                <hr style="border-color:var(--border); margin: 4px 0;">
-                <label>Temporadas</label>
-                <div class="seasons-tabs" id="seasons-tabs"></div>
-                <div id="episodios-lista"></div>
-                <p id="media-temporada" style="font-size:12px; color:var(--muted); text-align:right; margin-top:6px;"></p>
+            <hr style="border-color:var(--border); margin: 4px 0;">
+
+            <!-- Temporadas e nota por temporada -->
+            <label>Temporadas</label>
+            <div class="seasons-tabs" id="seasons-tabs"></div>
+
+            <label id="label-nota-temporada" style="margin-top:8px;">Nota da temporada 1</label>
+            <div class="rating" id="rating-temporada">
+                <span data-value="1">★</span>
+                <span data-value="2">★</span>
+                <span data-value="3">★</span>
+                <span data-value="4">★</span>
+                <span data-value="5">★</span>
             </div>
+
+            <!-- Episódios -->
+            <div id="episodios-lista"></div>
+            <p id="media-temporada" style="font-size:12px; color:var(--muted); text-align:right; margin-top:6px;"></p>
+
+            <hr style="border-color:var(--border); margin: 4px 0;">
 
             <label>Categoria</label>
             <select id="categoriaFilme">
@@ -98,7 +112,7 @@
         </div>
     </div>
 
-    <script src="nav-counts.js"></script>
-    <script src="series_script.js"></script>
+    <script src="nav_counts.js"></script>
+    <script src="series-script.js"></script>
 </body>
 </html>

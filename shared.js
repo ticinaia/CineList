@@ -1,5 +1,3 @@
-// shared.js — lógica compartilhada entre assistidos, watchlist e assistindo
-
 const API_KEY = "137645a15bec14eae77e0f109056e7e3";
 
 let filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
@@ -7,31 +5,15 @@ let filmeSelecionado = null;
 let notaSelecionada = 0;
 let categoriaAtual = "";
 
-// ---- CONTADORES DO MENU ----
-function atualizarMenu() {
-    filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
-
-    const counts = {
-        todos: filmesSalvos.length,
-        assistidos: filmesSalvos.filter(f => f.categoria === "Assistido").length,
-        watchlist: filmesSalvos.filter(f => f.categoria === "Quero ver").length,
-        assistindo: filmesSalvos.filter(f => f.categoria === "Assistindo").length,
-    };
-
-    const el = (id) => document.getElementById(id);
-    if (el("nav-todos"))      el("nav-todos").innerText      = counts.todos;
-    if (el("nav-assistidos")) el("nav-assistidos").innerText = counts.assistidos;
-    if (el("nav-watchlist"))  el("nav-watchlist").innerText  = counts.watchlist;
-    if (el("nav-assistindo")) el("nav-assistindo").innerText = counts.assistindo;
-}
-
 // ---- RENDER ----
 function renderizarLista(categoria, filtro = "") {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
 
     const lista = filmesSalvos.filter(f => {
-        const categoriaOk = f.categoria === categoria;
-        const filtroOk = filtro === "" || f.titulo.toLowerCase().includes(filtro.toLowerCase());
+        const categoriaOk = categoria === "WatchList"
+            ? f.watchlist === true
+            : f.categoria === categoria;
+        const filtroOk = filtro === "" || (f.titulo || "").toLowerCase().includes(filtro.toLowerCase());
         return categoriaOk && filtroOk;
     });
 
@@ -42,14 +24,14 @@ function renderizarLista(categoria, filtro = "") {
     container.innerHTML = "";
 
     if (lista.length === 0) {
-        vazio.classList.remove("hidden");
-        contador.innerText = 0;
+        if (vazio) vazio.classList.remove("hidden");
+        if (contador) contador.innerText = 0;
         atualizarCardsSecundarios(categoria);
         return;
     }
 
-    vazio.classList.add("hidden");
-    contador.innerText = lista.length;
+    if (vazio) vazio.classList.add("hidden");
+    if (contador) contador.innerText = lista.length;
 
     lista.forEach(filme => {
         const poster = filme.imagem
@@ -57,18 +39,21 @@ function renderizarLista(categoria, filtro = "") {
             : "https://via.placeholder.com/250x350?text=Sem+Imagem";
 
         const estrelas = "★".repeat(filme.nota || 0) + "☆".repeat(5 - (filme.nota || 0));
+        const badgeTipo = filme.tipo === "serie"
+            ? `<span class="badge-tipo badge-serie">Série</span>`
+            : `<span class="badge-tipo badge-filme">Filme</span>`;
 
         const div = document.createElement("div");
         div.classList.add("movie");
         div.innerHTML = `
             <img src="${poster}" alt="${filme.titulo}">
+            <span class="status">${filme.categoria}</span>
+            ${badgeTipo}
             <div class="info">
                 <h3 class="nome">${filme.titulo}</h3>
                 <span class="diretor">${estrelas}</span>
-                <span class="status">${filme.categoria}</span>
             </div>
         `;
-
         div.addEventListener("click", () => abrirModal(filme));
         container.appendChild(div);
     });
@@ -77,7 +62,10 @@ function renderizarLista(categoria, filtro = "") {
 }
 
 function atualizarCardsSecundarios(categoria) {
-    const lista = filmesSalvos.filter(f => f.categoria === categoria);
+    const lista = categoria === "WatchList"
+        ? filmesSalvos.filter(f => f.watchlist === true)
+        : filmesSalvos.filter(f => f.categoria === categoria);
+
     const total = lista.length;
     const media = total > 0
         ? (lista.reduce((acc, f) => acc + (f.nota || 0), 0) / total).toFixed(1)
@@ -96,20 +84,17 @@ function abrirModal(filme) {
     notaSelecionada = filme.nota || 0;
 
     document.getElementById("tituloFilme").innerText = filme.titulo;
-
     const poster = filme.imagem
         ? `https://image.tmdb.org/t/p/w500${filme.imagem}`
         : "https://via.placeholder.com/250x350?text=Sem+Imagem";
-
     document.getElementById("posterDetalhe").src = poster;
     document.getElementById("descricaoFilme").innerText = filme.descricao || "";
     document.getElementById("suaNota").innerText = filme.nota
         ? "⭐ Sua nota: " + filme.nota
         : "Sem nota";
-
     document.getElementById("categoriaFilme").value = filme.categoria || categoriaAtual;
+    document.getElementById("watchlist").checked = filme.watchlist || false;
 
-    // preenche estrelas
     document.querySelectorAll(".rating span").forEach(s => {
         s.classList.toggle("active", Number(s.dataset.value) <= notaSelecionada);
     });
@@ -138,18 +123,17 @@ function ativarEstrelas() {
 function salvar() {
     if (!filmeSelecionado) return;
 
-    const index = filmesSalvos.findIndex(f => f.id === filmeSelecionado.id);
+    const index = filmesSalvos.findIndex(f => f.id === filmeSelecionado.id && f.tipo === filmeSelecionado.tipo);
     if (index < 0) return;
 
     filmesSalvos[index].nota = notaSelecionada;
     filmesSalvos[index].categoria = document.getElementById("categoriaFilme").value;
+    filmesSalvos[index].watchlist = document.getElementById("watchlist").checked;
 
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
-
-    mostrarToast("Filme atualizado!");
+    mostrarToast("Salvo!");
     fecharModal();
     renderizarLista(categoriaAtual);
-    atualizarMenu();
 }
 
 // ---- REMOVER ----
@@ -157,13 +141,12 @@ function remover() {
     if (!filmeSelecionado) return;
     if (!confirm(`Remover "${filmeSelecionado.titulo}" da lista?`)) return;
 
-    filmesSalvos = filmesSalvos.filter(f => f.id !== filmeSelecionado.id);
+    filmesSalvos = filmesSalvos.filter(f => !(f.id === filmeSelecionado.id && f.tipo === filmeSelecionado.tipo));
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
 
-    mostrarToast("Filme removido.");
+    mostrarToast("Removido.");
     fecharModal();
     renderizarLista(categoriaAtual);
-    atualizarMenu();
 }
 
 // ---- TOAST ----
@@ -189,18 +172,17 @@ function ativarFiltroLocal() {
 }
 
 // ---- INICIALIZAR ----
-// chamado em cada página com a categoria correspondente
 function inicializarPagina(categoria) {
     categoriaAtual = categoria;
-
-    atualizarMenu();
     renderizarLista(categoria);
     ativarEstrelas();
     ativarFiltroLocal();
 
     document.getElementById("fecharModal").addEventListener("click", fecharModal);
     document.getElementById("salvar").addEventListener("click", salvar);
-    document.getElementById("remover").addEventListener("click", remover);
+
+    const btnRemover = document.getElementById("remover");
+    if (btnRemover) btnRemover.addEventListener("click", remover);
 
     document.getElementById("modal").addEventListener("click", (e) => {
         if (e.target === document.getElementById("modal")) fecharModal();

@@ -8,38 +8,48 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="header">
-    <h1>Cine<strong>List</strong></h1>
-    <nav class="menu">
-        <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
-        <a href="series.html">Séries <span id="nav-count-series">0</span></a>
-        <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
-        <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
-        <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
-    </nav>
-</header>
+    <header class="header">
+        <a href="index.html" class="logo-link"><h1>Cine<strong>List</strong></h1></a>
+        <nav class="menu">
+            <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
+            <a href="series.html">Séries <span id="nav-count-series">0</span></a>
+            <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
+            <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
+            <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
+            <a href="sugestoes.html">Sugestões ✦</a>
+        </nav>
+    </header>
 
     <main>
         <div id="todos">
             <h2>Assistindo <span id="contador">0</span></h2>
             <div id="pesquisa">
-                <input type="text" id="buscador" placeholder="Filtrar filmes...">
+                <input type="text" id="buscador" placeholder="Buscar...">
             </div>
         </div>
 
         <div class="cards">
             <div class="card">
-                <p class="label">Em andamento</p>
+                <p class="label">Total</p>
                 <h2 id="card-total">0</h2>
-                <span>filmes</span>
+                <span>títulos</span>
+            </div>
+            <div class="card">
+                <p class="label">Média das notas</p>
+                <h2 id="card-media">0</h2>
+                <span>de 5 estrelas</span>
+            </div>
+            <div class="card">
+                <p class="label">Melhor nota</p>
+                <h2 id="card-melhor">—</h2>
+                <span>estrelas</span>
             </div>
         </div>
 
-        <div class="filmes" id="lista-filmes"></div>
-
+        <div id="lista-filmes" class="filmes"></div>
         <div id="vazio" class="vazio hidden">
-            <p>Nenhum filme em andamento.</p>
-            <a href="index.html">Buscar filmes →</a>
+            <p>Nenhum título em andamento.</p>
+            <a href="index.html">Adicionar filmes</a> ou <a href="series.html">Adicionar séries</a>
         </div>
     </main>
 
@@ -50,7 +60,7 @@
             <p id="descricaoFilme"></p>
             <p id="suaNota"></p>
 
-            <label>Alterar nota</label>
+            <label>Nota</label>
             <div class="rating">
                 <span data-value="1">★</span>
                 <span data-value="2">★</span>
@@ -63,9 +73,13 @@
             <select id="categoriaFilme">
                 <option value="Favorito">Favorito</option>
                 <option value="Assistido">Assistido</option>
-                <option value="Quero ver">Quero ver</option>
                 <option value="Assistindo">Assistindo</option>
+                <option value="Quero ver">Quero ver</option>
             </select>
+
+            <label style="display:flex; align-items:center; gap:8px; font-size:14px;">
+                <input type="checkbox" id="watchlist"> Adicionar à Watchlist
+            </label>
 
             <div class="modal-actions">
                 <button id="salvar">Salvar</button>
@@ -74,10 +88,9 @@
             </div>
         </div>
     </div>
-    <script src="nav-counts.js"></script>
+
+    <script src="nav_counts.js"></script>
     <script src="shared.js"></script>
-    <script>
-        inicializarPagina("Assistindo");
-    </script>
+    <script>inicializarPagina("Assistindo");</script>
 </body>
 </html>
