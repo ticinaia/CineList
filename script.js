@@ -1,12 +1,7 @@
-// ============================================================
-//  CHAVES DE API
-// ============================================================
+
 const TMDB_API_KEY   = "137645a15bec14eae77e0f109056e7e3";
 const TRAKT_API_KEY  = "d300e7cdf7313b498d7ced71ea867b5c817912984e5c64015ce90443762803f1";
 
-// ============================================================
-//  ESTADO GLOBAL
-// ============================================================
 const modal    = document.getElementById("modal");
 const abrirBtn = document.getElementById("adicionarModal");
 const fecharBtn= document.getElementById("fecharModal");
@@ -25,18 +20,15 @@ const temSugestaoPendente = (() => {
     } catch { return false; }
 })();
 
-// Gêneros
 let mapaGeneros      = {};
 let filtroGeneroAtivo = null;
 
-// Temporadas
+
 let temporadasModal  = {};
 let temporadaAtiva   = 1;
 let totalTemporadas  = 0;
 
-// ============================================================
-//  GÊNEROS
-// ============================================================
+
 async function carregarGeneros() {
     try {
         const endpoint = `https://api.themoviedb.org/3/genre/movie/list?api_key=${TMDB_API_KEY}&language=pt-BR`;
@@ -97,9 +89,7 @@ function aplicarFiltroGenero() {
     }
 }
 
-// ============================================================
-//  MODAL ABRIR / FECHAR
-// ============================================================
+
 abrirBtn.addEventListener("click", () => {
     filmeSelecionado = null;
     limparModal();
@@ -130,9 +120,7 @@ function limparModal() {
     totalTemporadas = 0;
 }
 
-// ============================================================
-//  BUSCA
-// ============================================================
+
 let timeout;
 
 buscador.addEventListener("input", () => {
@@ -188,9 +176,7 @@ async function processarSugestaoPendente() {
     }
 }
 
-// ============================================================
-//  RENDER CARDS (busca / filtro)
-// ============================================================
+
 function renderizarFilmes(lista) {
     const container = document.querySelector(".filmes");
     container.innerHTML = "";
@@ -208,9 +194,6 @@ function renderizarFilmes(lista) {
     atualizarContador();
 }
 
-// ============================================================
-//  MODAL FILME
-// ============================================================
 function abrirModalFilme(filme) {
     filmeSelecionado = { ...filme, tipo: "filme" };
     const secaoSeries = document.getElementById("secao-series");
@@ -221,11 +204,14 @@ function abrirModalFilme(filme) {
     document.getElementById("posterDetalhe").src = filme.poster_path
         ? `https://image.tmdb.org/t/p/w500${filme.poster_path}`
         : "https://via.placeholder.com/250x350?text=Sem+Imagem";
-    document.getElementById("descricaoFilme").innerText = filme.overview || "Sem descrição disponível";
-    document.getElementById("notaGeral").innerText = "⭐ Nota geral: " + (filme.vote_average?.toFixed(1) || "0");
-    document.getElementById("infoExtra").innerText  = generosTexto ? "🎬 " + generosTexto : "";
-
     const salvo = filmesSalvos.find(f => f.id === filme.id && f.tipo === "filme");
+    const notaPrincipal = salvo?.categoria === "Assistido" && salvo?.nota
+        ? `⭐ Sua nota: ${salvo.nota}`
+        : "⭐ Nota geral: " + (filme.vote_average?.toFixed(1) || "0");
+
+    document.getElementById("descricaoFilme").innerText = filme.overview || "Sem descrição disponível";
+    document.getElementById("notaGeral").innerText = notaPrincipal;
+    document.getElementById("infoExtra").innerText  = generosTexto ? "🎬 " + generosTexto : "";
     document.getElementById("suaNota").innerText = salvo?.nota ? "⭐ Sua nota: " + salvo.nota : "Você ainda não avaliou";
     notaSelecionada = salvo?.nota || 0;
     document.querySelectorAll(".rating span").forEach(s => {
@@ -238,9 +224,7 @@ function abrirModalFilme(filme) {
     modal.classList.add("active");
 }
 
-// ============================================================
-//  MODAL SÉRIE
-// ============================================================
+
 async function abrirModalSerie(serie) {
     filmeSelecionado = { ...serie, tipo: "serie" };
     temporadasModal = {};
@@ -289,9 +273,6 @@ async function abrirModalSerie(serie) {
     modal.classList.add("active");
 }
 
-// ============================================================
-//  TEMPORADAS
-// ============================================================
 function renderizarAbasTemporadas(serieId) {
     const tabs = document.getElementById("seasons-tabs");
     if (!tabs) return;
@@ -392,9 +373,7 @@ function atualizarMediaTemporada(numTemporada) {
     if (el) el.innerText = `Média dos episódios da T${numTemporada}: ${media} ★`;
 }
 
-// ============================================================
-//  ESTRELAS GERAL
-// ============================================================
+
 function ativarEstrelas() {
     document.querySelectorAll(".rating span").forEach(star => {
         star.onclick = () => {
@@ -411,9 +390,7 @@ function ativarEstrelas() {
 
 ativarEstrelas();
 
-// ============================================================
-//  SALVAR
-// ============================================================
+
 document.getElementById("salvar").addEventListener("click", () => {
     if (!filmeSelecionado) {
         mostrarToast("Pesquise e selecione um item antes de salvar.");
@@ -459,14 +436,13 @@ document.getElementById("salvar").addEventListener("click", () => {
     }
 });
 
-// ============================================================
-//  CARDS STATS
-// ============================================================
+
 function atualizarCards() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
     const soFilmes  = filmesSalvos.filter(f => f.tipo !== "serie");
+    const filmesAssistidos = soFilmes.filter(f => f.categoria === "Assistido");
     const total     = soFilmes.length;
-    const assistidos= soFilmes.filter(f => f.categoria === "Assistido").length;
+    const assistidos= filmesAssistidos.length;
     const media     = total > 0
         ? (soFilmes.reduce((acc, f) => acc + (f.nota || 0), 0) / total).toFixed(1)
         : 0;
@@ -474,19 +450,60 @@ function atualizarCards() {
     if (h2s[0]) h2s[0].innerText = total;
     if (h2s[1]) h2s[1].innerText = assistidos;
     if (h2s[2]) h2s[2].innerText = media;
+
+    calcularHorasTotais(filmesAssistidos);
+}
+const cacheDuracoes = JSON.parse(localStorage.getItem("cache_duracoes") || "{}");
+
+async function buscarDuracao(tmdbId) {
+    if (cacheDuracoes[tmdbId] !== undefined) return cacheDuracoes[tmdbId];
+    try {
+        const res  = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}`);
+        const data = await res.json();
+        const min  = data.runtime || 0;
+        cacheDuracoes[tmdbId] = min;
+        localStorage.setItem("cache_duracoes", JSON.stringify(cacheDuracoes));
+        return min;
+    } catch {
+        return 0;
+    }
 }
 
-// ============================================================
-//  CONTADOR
-// ============================================================
+async function calcularHorasTotais(filmes) {
+    const elHoras = document.getElementById("card-horas");
+    if (!elHoras) return;
+
+    const minutosCache = filmes.reduce((acc, f) => acc + (cacheDuracoes[f.id] || 0), 0);
+    if (minutosCache > 0) elHoras.innerText = formatarHoras(minutosCache);
+
+    const semCache = filmes.filter(f => cacheDuracoes[f.id] === undefined && f.id);
+    if (semCache.length === 0) return;
+
+    const lote = 5;
+    for (let i = 0; i < semCache.length; i += lote) {
+        const grupo = semCache.slice(i, i + lote);
+        await Promise.all(grupo.map(f => buscarDuracao(f.id)));
+
+        const totalMin = filmes.reduce((acc, f) => acc + (cacheDuracoes[f.id] || 0), 0);
+        if (elHoras) elHoras.innerText = formatarHoras(totalMin);
+    }
+}
+
+function formatarHoras(minutos) {
+    if (!minutos || minutos === 0) return "—";
+    const h = Math.floor(minutos / 60);
+    const m = minutos % 60;
+    if (h === 0) return `${m}min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}min`;
+}
+
 function atualizarContador() {
     const el = document.getElementById("contador");
     if (el) el.innerText = document.querySelectorAll(".movie").length;
 }
 
-// ============================================================
-//  TOAST
-// ============================================================
+
 function mostrarToast(mensagem) {
     let toast = document.getElementById("toast");
     if (!toast) {
@@ -499,18 +516,18 @@ function mostrarToast(mensagem) {
     setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
-// ============================================================
-//  CRIAR CARD (reutilizável)
-// ============================================================
+
 function criarCard(item, tipo) {
     const poster = item.poster_path
         ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
         : "https://via.placeholder.com/250x350?text=Sem+Imagem";
     const titulo = item.title || item.name || "Sem título";
     const ano    = (item.release_date || item.first_air_date || "").slice(0, 4) || "—";
-    const nota   = item.vote_average?.toFixed(1) || "0";
     const salvo  = filmesSalvos.find(f => f.id === item.id && f.tipo === tipo);
     const badgeStatus = salvo ? `<span class="status">${salvo.categoria}</span>` : "";
+    const notaTexto = tipo === "filme" && salvo?.categoria === "Assistido" && salvo?.nota
+        ? `Sua nota: ${salvo.nota}`
+        : `⭐ ${item.vote_average?.toFixed(1) || "0"}`;
 
     const div = document.createElement("div");
     div.classList.add("movie");
@@ -521,22 +538,20 @@ function criarCard(item, tipo) {
         <div class="info">
             <h3 class="nome">${titulo}</h3>
             <span class="diretor">${ano}</span>
-            <span class="nota-tmdb">⭐ ${nota}</span>
+            <span class="nota-tmdb">${notaTexto}</span>
         </div>
     `;
     div.addEventListener("click", () => tipo === "filme" ? abrirModalFilme(item) : abrirModalSerie(item));
     return div;
 }
 
-// ============================================================
-//  HELPER: cria seção com título + grid de cards
-// ============================================================
+
 function criarSecao(titulo, emoji, items, tipo, container) {
     const wrap = document.createElement("div");
     wrap.style.cssText = "width:100%; margin-bottom:36px;";
     wrap.innerHTML = `
         <h3 style="font-family:'DM Serif Display',serif; font-size:18px; font-weight:400;
-                   color:var(--muted); margin-bottom:12px;">${emoji} ${titulo}</h3>
+                color:var(--muted); margin-bottom:12px;">${emoji} ${titulo}</h3>
     `;
     const row = document.createElement("div");
     row.style.cssText = "display:flex; flex-wrap:wrap; gap:20px; width:100%;";
@@ -545,9 +560,7 @@ function criarSecao(titulo, emoji, items, tipo, container) {
     container.appendChild(wrap);
 }
 
-// ============================================================
-//  TRAKT — buscar trending e enriquecer com dados do TMDB
-// ============================================================
+
 async function buscarTrendingTrakt(tipo = "movies") {
     const endpoint = tipo === "movies"
         ? "https://api.trakt.tv/movies/trending?limit=8"
@@ -564,7 +577,7 @@ async function buscarTrendingTrakt(tipo = "movies") {
     if (!res.ok) throw new Error(`Trakt retornou ${res.status}`);
     const data = await res.json();
 
-    // data = [{ watchers, movie: { title, ids: { tmdb } } }, ...]
+
     const tmdbTipo = tipo === "movies" ? "movie" : "tv";
     const chave    = tipo === "movies" ? "movie" : "show";
 
@@ -578,7 +591,6 @@ async function buscarTrendingTrakt(tipo = "movies") {
                 );
                 const item = await r.json();
                 if (item?.success === false || !item?.id) return null;
-                // Normalizar séries para ter campo title
                 if (tmdbTipo === "tv") item.title = item.name;
                 return item;
             } catch { return null; }
@@ -588,15 +600,12 @@ async function buscarTrendingTrakt(tipo = "movies") {
     return enriched.filter(Boolean);
 }
 
-// ============================================================
-//  HOME — TMDB Populares + Trakt Trending
-// ============================================================
 async function carregarHome() {
     const container = document.querySelector(".filmes");
     if (!container) return;
     container.innerHTML = `<p style="color:var(--muted); font-size:14px; padding:20px 0;">Carregando...</p>`;
 
-    // Buscar tudo em paralelo
+
     const [
         resFilmes,
         resSeries,
@@ -611,7 +620,6 @@ async function carregarHome() {
 
     container.innerHTML = "";
 
-    // ── TMDB Populares ──────────────────────────────────────
     if (resFilmes.status === "fulfilled") {
         const filmes = (resFilmes.value.results || []).slice(0, 6);
         if (filmes.length) criarSecao("Filmes populares", "🎬", filmes, "filme", container);
@@ -621,17 +629,15 @@ async function carregarHome() {
         const series = (resSeries.value.results || []).slice(0, 6);
         if (series.length) criarSecao("Séries populares", "📺", series, "serie", container);
     }
-
-    // ── Trakt Trending ──────────────────────────────────────
     const divTraktTitulo = document.createElement("div");
     divTraktTitulo.style.cssText = "width:100%; margin:8px 0 4px;";
     divTraktTitulo.innerHTML = `
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
             <h2 style="font-family:'DM Serif Display',serif; font-size:22px; font-weight:400; margin:0;">
-                🔥 Em alta agora
+            Em alta agora
             </h2>
             <span style="font-size:11px; background:var(--gold); color:var(--ink);
-                         padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.5px;">
+                        padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.5px;">
                 via Trakt
             </span>
         </div>
@@ -660,9 +666,6 @@ async function carregarHome() {
     }
 }
 
-// ============================================================
-//  INICIALIZAR
-// ============================================================
 atualizarCards();
 carregarGeneros().then(() => processarSugestaoPendente());
 

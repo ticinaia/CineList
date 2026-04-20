@@ -24,6 +24,7 @@ let filtroGeneroAtivo = null;
 let temporadasModal = {};
 let temporadaAtiva = 1;
 let totalTemporadas = 0;
+const cacheDuracoesSeries = JSON.parse(localStorage.getItem("cache_duracoes_series") || "{}");
 
 function recarregarFilmesSalvos() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
@@ -127,7 +128,6 @@ function hidratarTemporadaPrefetch(temporadaData) {
     return true;
 }
 
-// ---------------- GÊNEROS ----------------
 
 async function carregarGeneros() {
     try {
@@ -179,7 +179,6 @@ function aplicarFiltroGenero() {
     if (filtradas.length === 0) mostrarToast(`Nenhum resultado para "${mapaGeneros[filtroGeneroAtivo] || "esse gênero"}".`);
 }
 
-// ---------------- MODAL ABRIR/FECHAR ----------------
 
 abrirBtn.addEventListener("click", () => {
     serieSelecionada = null;
@@ -212,7 +211,6 @@ function limparModal() {
     totalTemporadas = 0;
 }
 
-// ---------------- BUSCA ----------------
 
 let timeout;
 buscador.addEventListener("input", () => {
@@ -278,7 +276,6 @@ async function processarSugestaoPendente() {
     }
 }
 
-// ---------------- RENDER CARDS ----------------
 
 function renderizarSeries(lista) {
     const container = document.querySelector(".filmes");
@@ -318,7 +315,6 @@ function renderizarSeries(lista) {
     atualizarContador();
 }
 
-// ---------------- MODAL SÉRIE ----------------
 
 async function abrirModalSerie(serie) {
     serie = normalizarSerie(serie);
@@ -386,7 +382,6 @@ async function abrirModalSerie(serie) {
     }
 }
 
-// ---------------- ESTRELAS GERAL ----------------
 
 function atualizarEstrelasGeral(nota) {
     document.querySelectorAll("#rating-geral span").forEach(s => {
@@ -402,7 +397,6 @@ document.querySelectorAll("#rating-geral span").forEach(star => {
     });
 });
 
-// ---------------- ESTRELAS TEMPORADA ----------------
 
 function atualizarEstrelasTemporada(nota) {
     document.querySelectorAll("#rating-temporada span").forEach(s => {
@@ -419,7 +413,6 @@ document.querySelectorAll("#rating-temporada span").forEach(star => {
     });
 });
 
-// ---------------- TEMPORADAS ----------------
 
 function renderizarAbasTemporadas(serieId) {
     const tabs = document.getElementById("seasons-tabs");
@@ -514,7 +507,6 @@ async function carregarTemporada(serieId, numero) {
     }
 }
 
-// ---------------- EPISÓDIOS ----------------
 
 function renderizarEpisodios(numTemporada) {
     const lista = document.getElementById("episodios-lista");
@@ -571,7 +563,6 @@ function atualizarMediaTemporada(numTemporada) {
     if (el) el.innerText = `Média dos episódios da T${numTemporada}: ${media} ★`;
 }
 
-// ---------------- SALVAR ----------------
 
 document.getElementById("salvar").addEventListener("click", () => {
     if (!serieSelecionada) {
@@ -605,7 +596,6 @@ document.getElementById("salvar").addEventListener("click", () => {
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
     recarregarFilmesSalvos();
     atualizarCards();
-    // Chama atualizarNavCounts do nav-counts.js
     if (typeof atualizarNavCounts === "function") atualizarNavCounts();
     mostrarToast("Série salva com sucesso!");
     modal.classList.remove("active");
@@ -620,13 +610,13 @@ document.getElementById("salvar").addEventListener("click", () => {
     }
 });
 
-// ---------------- CARDS STATS ----------------
 
 function atualizarCards() {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
     const soSeries = filmesSalvos.filter(f => f.tipo === "serie");
+    const seriesAssistidas = soSeries.filter(f => f.categoria === "Assistido");
     const total = soSeries.length;
-    const assistidas = soSeries.filter(f => f.categoria === "Assistido").length;
+    const assistidas = seriesAssistidas.length;
     const media = total > 0
         ? (soSeries.reduce((acc, f) => acc + (f.nota || 0), 0) / total).toFixed(1)
         : 0;
@@ -634,6 +624,55 @@ function atualizarCards() {
     if (h2s[0]) h2s[0].innerText = total;
     if (h2s[1]) h2s[1].innerText = assistidas;
     if (h2s[2]) h2s[2].innerText = media;
+
+    calcularHorasTotaisSeries(seriesAssistidas);
+}
+
+async function buscarDuracaoSerie(tmdbId) {
+    if (cacheDuracoesSeries[tmdbId] !== undefined) return cacheDuracoesSeries[tmdbId];
+
+    try {
+        const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&language=pt-BR`);
+        const data = await res.json();
+        const runtimeMedio = Array.isArray(data.episode_run_time) ? (data.episode_run_time[0] || 0) : 0;
+        const episodios = data.number_of_episodes || 0;
+        const minutos = runtimeMedio * episodios;
+
+        cacheDuracoesSeries[tmdbId] = minutos;
+        localStorage.setItem("cache_duracoes_series", JSON.stringify(cacheDuracoesSeries));
+        return minutos;
+    } catch (err) {
+        return 0;
+    }
+}
+
+async function calcularHorasTotaisSeries(series) {
+    const elHoras = document.getElementById("card-horas");
+    if (!elHoras) return;
+
+    const minutosCache = series.reduce((acc, s) => acc + (cacheDuracoesSeries[s.id] || 0), 0);
+    elHoras.innerText = formatarHoras(minutosCache);
+
+    const semCache = series.filter(s => cacheDuracoesSeries[s.id] === undefined && s.id);
+    if (semCache.length === 0) return;
+
+    const lote = 5;
+    for (let i = 0; i < semCache.length; i += lote) {
+        const grupo = semCache.slice(i, i + lote);
+        await Promise.all(grupo.map(s => buscarDuracaoSerie(s.id)));
+
+        const totalMin = series.reduce((acc, s) => acc + (cacheDuracoesSeries[s.id] || 0), 0);
+        if (elHoras) elHoras.innerText = formatarHoras(totalMin);
+    }
+}
+
+function formatarHoras(minutos) {
+    if (!minutos || minutos === 0) return "—";
+    const h = Math.floor(minutos / 60);
+    const m = minutos % 60;
+    if (h === 0) return `${m}min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}min`;
 }
 
 function atualizarContador() {

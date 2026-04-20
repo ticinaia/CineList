@@ -12,11 +12,11 @@
         <a href="index.html" class="logo-link"><h1>Cine<strong>List</strong></h1></a>
         <nav class="menu">
             <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
-            <a href="series.html">Séries <span id="nav-count-series">0</span></a>
+            <a href="series.html" class="active">Séries <span id="nav-count-series">0</span></a>
             <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
             <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
             <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
-            <a href="sugestoes.html">Sugestões ✦</a>
+            <a href="sugestoes.html">Sugestões <span class="menu-star">✦</span></a>
         </nav>
     </header>
 
@@ -42,9 +42,14 @@
                 <span>séries</span>
             </div>
             <div class="card">
-                <p class="label">Média das avaliações:</p>
+                <p class="label">Média das avaliações</p>
                 <h2>0</h2>
                 <span>de 5 estrelas</span>
+            </div>
+            <div class="card">
+                <p class="label">Horas assistidas</p>
+                <h2 id="card-horas">—</h2>
+                <span>horas no total</span>
             </div>
         </div>
 
@@ -62,7 +67,6 @@
             <p id="suaNota"></p>
             <p id="infoExtra"></p>
 
-            <!-- Nota geral da série -->
             <label>Nota geral da série</label>
             <div class="rating" id="rating-geral">
                 <span data-value="1">★</span>
@@ -74,7 +78,6 @@
 
             <hr style="border-color:var(--border); margin: 4px 0;">
 
-            <!-- Temporadas e nota por temporada -->
             <label>Temporadas</label>
             <div class="seasons-tabs" id="seasons-tabs"></div>
 
@@ -87,7 +90,6 @@
                 <span data-value="5">★</span>
             </div>
 
-            <!-- Episódios -->
             <div id="episodios-lista"></div>
             <p id="media-temporada" style="font-size:12px; color:var(--muted); text-align:right; margin-top:6px;"></p>
 

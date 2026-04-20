@@ -13,10 +13,10 @@
         <nav class="menu">
             <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
             <a href="series.html">Séries <span id="nav-count-series">0</span></a>
-            <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
+            <a href="assistidos.html" class="active">Assistidos <span id="nav-count-assistidos">0</span></a>
             <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
             <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
-            <a href="sugestoes.html">Sugestões ✦</a>
+            <a href="sugestoes.html">Sugestões <span class="menu-star">✦</span></a>
         </nav>
     </header>
 
@@ -44,8 +44,14 @@
                 <h2 id="card-melhor">—</h2>
                 <span>estrelas</span>
             </div>
+            <div class="card">
+                <p class="label">Horas assistidas</p>
+                <h2 id="card-horas">—</h2>
+                <span>horas no total</span>
+            </div>
         </div>
 
+        <div id="feedback-filtro" class="feedback-filtro hidden"></div>
         <div id="lista-filmes" class="filmes"></div>
         <div id="vazio" class="vazio hidden">
             <p>Nenhum título assistido ainda.</p>

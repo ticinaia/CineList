@@ -1,18 +1,10 @@
-// ============================================================
-//  CHAVES DE API
-// ============================================================
 const TMDB_API_KEY  = "137645a15bec14eae77e0f109056e7e3";
 const TRAKT_API_KEY = "d300e7cdf7313b498d7ced71ea867b5c817912984e5c64015ce90443762803f1";
 
-// ============================================================
-//  ESTADO GLOBAL
-// ============================================================
 let tipoSug    = "filme";
 let mapaGeneros = {};
 
-// ============================================================
-//  TIPO TOGGLE
-// ============================================================
+
 function setTipoSug(tipo) {
     tipoSug = tipo;
     document.getElementById("btn-filmes-sug").classList.toggle("active", tipo === "filme");
@@ -20,9 +12,7 @@ function setTipoSug(tipo) {
     iniciar();
 }
 
-// ============================================================
-//  GÊNEROS
-// ============================================================
+
 async function carregarMapaGeneros() {
     try {
         const [resFilme, resSerie] = await Promise.all([
@@ -37,9 +27,6 @@ async function carregarMapaGeneros() {
     }
 }
 
-// ============================================================
-//  ANÁLISE DO HISTÓRICO
-// ============================================================
 function analisarGenerosPreferidos(tipo) {
     const todos     = JSON.parse(localStorage.getItem("filmes")) || [];
     const filtrados = tipo === "filme"
@@ -59,9 +46,6 @@ function analisarGenerosPreferidos(tipo) {
         .map(([id, count]) => ({ id: Number(id), nome: mapaGeneros[id] || "Desconhecido", count }));
 }
 
-// ============================================================
-//  RENDER GÊNEROS FAVORITOS
-// ============================================================
 function renderizarGenerosFavoritos(generos) {
     const el = document.getElementById("generos-favoritos");
     if (!el) return;
@@ -91,9 +75,6 @@ function renderizarGenerosFavoritos(generos) {
     `;
 }
 
-// ============================================================
-//  HELPER: navegação ao clicar num card de sugestão
-// ============================================================
 function aoClicarSugestao(item, tipo) {
     return async () => {
         const pagina  = tipo === "filme" ? "index.html" : "series.html";
@@ -123,9 +104,7 @@ function aoClicarSugestao(item, tipo) {
     };
 }
 
-// ============================================================
-//  HELPER: criar card visual
-// ============================================================
+
 function criarCardSugestao(item, tipo) {
     const poster = item.poster_path
         ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
@@ -149,9 +128,6 @@ function criarCardSugestao(item, tipo) {
     return div;
 }
 
-// ============================================================
-//  SEÇÃO 1 — SUGESTÕES TMDB (por gênero favorito)
-// ============================================================
 async function buscarSugestoesTMDB(generos, tipo) {
     const secao = document.getElementById("secao-sugestoes");
     if (!secao) return;
@@ -174,7 +150,6 @@ async function buscarSugestoesTMDB(generos, tipo) {
         const resultados = await Promise.all(promises);
         secao.innerHTML  = "";
 
-        // Título da seção TMDB
         const tituloTmdb = document.createElement("div");
         tituloTmdb.style.cssText = "width:100%; margin-bottom:20px;";
         tituloTmdb.innerHTML = `
@@ -183,7 +158,7 @@ async function buscarSugestoesTMDB(generos, tipo) {
                     🎯 Sugestões para você
                 </h2>
                 <span style="font-size:11px; background:#01b4e4; color:#fff;
-                             padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.5px;">
+                            padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.5px;">
                     via TMDB
                 </span>
             </div>
@@ -201,7 +176,7 @@ async function buscarSugestoesTMDB(generos, tipo) {
             bloco.style.marginBottom = "32px";
             bloco.innerHTML = `
                 <h3 style="font-family:'DM Serif Display',serif; font-size:18px; font-weight:400;
-                           color:var(--muted); margin-bottom:14px;">
+                        color:var(--muted); margin-bottom:14px;">
                     Porque você curte <span style="color:var(--gold)">${genero.nome}</span>
                 </h3>
                 <div class="filmes" id="sug-tmdb-${genero.id}"></div>
@@ -218,9 +193,6 @@ async function buscarSugestoesTMDB(generos, tipo) {
     }
 }
 
-// ============================================================
-//  SEÇÃO 2 — TRENDING TRAKT (recomendações da comunidade)
-// ============================================================
 async function buscarTrendingTrakt(tipo) {
     const traktTipo = tipo === "filme" ? "movies" : "shows";
     const chave     = tipo === "filme" ? "movie" : "show";
@@ -256,7 +228,7 @@ async function buscarTrendingTrakt(tipo) {
 
     return enriched
         .filter(Boolean)
-        .filter(e => !idsSalvos.has(e.item.id)) // excluir já salvos
+        .filter(e => !idsSalvos.has(e.item.id))
         .map(e => e.item);
 }
 
@@ -270,7 +242,7 @@ async function renderizarSecaoTrakt(tipo) {
                 🔥 Em alta na comunidade
             </h2>
             <span style="font-size:11px; background:var(--gold); color:var(--ink);
-                         padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.5px;">
+                        padding:2px 8px; border-radius:999px; font-weight:600; letter-spacing:.5px;">
                 via Trakt
             </span>
         </div>
@@ -308,9 +280,7 @@ async function renderizarSecaoTrakt(tipo) {
     }
 }
 
-// ============================================================
-//  INICIAR (chamado ao trocar tipo ou na carga inicial)
-// ============================================================
+
 async function iniciar() {
     await carregarMapaGeneros();
 

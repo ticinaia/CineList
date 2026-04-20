@@ -14,9 +14,9 @@
             <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
             <a href="series.html">Séries <span id="nav-count-series">0</span></a>
             <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
-            <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
+            <a href="watchlist.html" class="active">WatchList <span id="nav-count-watchlist">0</span></a>
             <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
-            <a href="sugestoes.html">Sugestões ✦</a>
+            <a href="sugestoes.html">Sugestões <span class="menu-star">✦</span></a>
         </nav>
     </header>
 
@@ -46,6 +46,13 @@
             </div>
         </div>
 
+        <div class="watchlist-toolbar">
+            <p class="watchlist-hint">Deslize ou use as setas para navegar pela sua lista.</p>
+            <div class="watchlist-controls">
+                <button type="button" id="watchlist-prev" class="carousel-btn" aria-label="Ver títulos anteriores">◀</button>
+                <button type="button" id="watchlist-next" class="carousel-btn" aria-label="Ver próximos títulos">▶</button>
+            </div>
+        </div>
         <div id="lista-filmes" class="filmes"></div>
         <div id="vazio" class="vazio hidden">
             <p>Sua watchlist está vazia.</p>

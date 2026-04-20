@@ -76,6 +76,12 @@ body {
     line-height: 1.6;
 }
 
+.menu a .menu-star {
+    min-width: 22px;
+    justify-content: center;
+    font-weight: 700;
+}
+
 .menu a:hover span {
     background: #000000;
     color: var(--card-bg);
@@ -466,6 +472,120 @@ main {
     color: var(--gold);
     text-decoration: underline;
     font-size: 14px;
+}
+
+.vazio button,
+.feedback-filtro button {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.vazio button:hover,
+.feedback-filtro button:hover {
+    background: var(--gold);
+    color: var(--ink);
+}
+
+.feedback-filtro {
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    border: 1px solid rgba(201, 168, 76, 0.45);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(244, 239, 233, 0.95), rgba(234, 228, 220, 0.85));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    color: var(--ink);
+}
+
+.feedback-filtro p {
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.watchlist-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.watchlist-hint {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.watchlist-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.carousel-btn {
+    background: var(--ink);
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.carousel-btn:hover {
+    background: var(--gold);
+    color: var(--ink);
+}
+
+.carousel-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.filmes.watchlist-carousel {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+}
+
+.filmes.watchlist-carousel .movie {
+    flex: 0 0 200px;
+    scroll-snap-align: start;
+}
+
+.filmes.watchlist-carousel::-webkit-scrollbar {
+    height: 8px;
+}
+
+.filmes.watchlist-carousel::-webkit-scrollbar-thumb {
+    background: var(--gold);
+    border-radius: 999px;
+}
+
+.filmes.watchlist-carousel::-webkit-scrollbar-track {
+    background: rgba(138, 129, 124, 0.2);
+    border-radius: 999px;
+}
+
+@media (max-width: 780px) {
+    .watchlist-toolbar,
+    .feedback-filtro {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .watchlist-controls {
+        justify-content: flex-end;
+    }
 }
 
 .hidden {

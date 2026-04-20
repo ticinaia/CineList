@@ -4,10 +4,105 @@ let filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
 let filmeSelecionado = null;
 let notaSelecionada = 0;
 let categoriaAtual = "";
+let filtroAtual = "";
+const cacheDuracoes = JSON.parse(localStorage.getItem("cache_duracoes") || "{}");
+const cacheDuracoesSeries = JSON.parse(localStorage.getItem("cache_duracoes_series") || "{}");
+
+function obterListaBase(categoria) {
+    return categoria === "WatchList"
+        ? filmesSalvos.filter(f => f.watchlist === true)
+        : filmesSalvos.filter(f => f.categoria === categoria);
+}
+
+function atualizarEstadoVazio(categoria, filtro, listaBase, listaFiltrada) {
+    const vazio = document.getElementById("vazio");
+    const feedback = document.getElementById("feedback-filtro");
+    if (!vazio) return;
+
+    if (feedback) feedback.classList.add("hidden");
+
+    if (listaFiltrada.length > 0) {
+        vazio.classList.add("hidden");
+        return;
+    }
+
+    vazio.classList.remove("hidden");
+
+    if (categoria === "Assistido" && filtro && listaBase.length > 0) {
+        vazio.innerHTML = `
+            <p>Nenhum título assistido corresponde a "${filtro}".</p>
+            <button type="button" id="limpar-filtro-vazio">Limpar busca</button>
+        `;
+
+        if (feedback) {
+            feedback.innerHTML = `
+                <p>Seu filtro está ativo e não encontrou resultados entre os títulos assistidos.</p>
+                <button type="button" id="limpar-filtro-feedback">Mostrar todos</button>
+            `;
+            feedback.classList.remove("hidden");
+        }
+    } else if (categoria === "WatchList" && filtro && listaBase.length > 0) {
+        vazio.innerHTML = `
+            <p>Nada da sua watchlist combina com "${filtro}".</p>
+            <button type="button" id="limpar-filtro-vazio">Limpar busca</button>
+        `;
+    } else if (categoria === "WatchList") {
+        vazio.innerHTML = `
+            <p>Sua watchlist está vazia.</p>
+            <a href="index.html">Adicionar filmes</a> ou <a href="series.html">Adicionar séries</a>
+        `;
+    } else if (categoria === "Assistido") {
+        vazio.innerHTML = `
+            <p>Nenhum título assistido ainda.</p>
+            <a href="index.html">Adicionar filmes</a> ou <a href="series.html">Adicionar séries</a>
+        `;
+    }
+
+    document.getElementById("limpar-filtro-vazio")?.addEventListener("click", limparFiltroLocal);
+    document.getElementById("limpar-filtro-feedback")?.addEventListener("click", limparFiltroLocal);
+}
+
+function atualizarControlesCarousel() {
+    if (categoriaAtual !== "WatchList") return;
+    const container = document.getElementById("lista-filmes");
+    const prev = document.getElementById("watchlist-prev");
+    const next = document.getElementById("watchlist-next");
+    if (!container || !prev || !next) return;
+
+    const maxScroll = Math.max(0, container.scrollWidth - container.clientWidth);
+    prev.disabled = container.scrollLeft <= 4;
+    next.disabled = container.scrollLeft >= maxScroll - 4;
+}
+
+function atualizarCarouselWatchlist() {
+    if (categoriaAtual !== "WatchList") return;
+    const container = document.getElementById("lista-filmes");
+    if (!container) return;
+    container.classList.add("watchlist-carousel");
+    atualizarControlesCarousel();
+}
+
+function rolarWatchlist(direcao) {
+    const container = document.getElementById("lista-filmes");
+    if (!container) return;
+    const card = container.querySelector(".movie");
+    const distancia = card ? card.offsetWidth + 20 : 240;
+    container.scrollBy({ left: direcao * distancia * 2, behavior: "smooth" });
+    setTimeout(atualizarControlesCarousel, 250);
+}
+
+function limparFiltroLocal() {
+    const buscador = document.getElementById("buscador");
+    if (buscador) buscador.value = "";
+    filtroAtual = "";
+    renderizarLista(categoriaAtual, "");
+}
 
 // ---- RENDER ----
 function renderizarLista(categoria, filtro = "") {
     filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
+    filtroAtual = filtro;
+    const listaBase = obterListaBase(categoria);
 
     const lista = filmesSalvos.filter(f => {
         const categoriaOk = categoria === "WatchList"
@@ -22,15 +117,18 @@ function renderizarLista(categoria, filtro = "") {
     const contador = document.getElementById("contador");
 
     container.innerHTML = "";
+    container.classList.toggle("watchlist-carousel", categoria === "WatchList");
 
     if (lista.length === 0) {
-        if (vazio) vazio.classList.remove("hidden");
+        atualizarEstadoVazio(categoria, filtro, listaBase, lista);
         if (contador) contador.innerText = 0;
         atualizarCardsSecundarios(categoria);
+        atualizarControlesCarousel();
         return;
     }
 
     if (vazio) vazio.classList.add("hidden");
+    document.getElementById("feedback-filtro")?.classList.add("hidden");
     if (contador) contador.innerText = lista.length;
 
     lista.forEach(filme => {
@@ -59,12 +157,11 @@ function renderizarLista(categoria, filtro = "") {
     });
 
     atualizarCardsSecundarios(categoria);
+    atualizarCarouselWatchlist();
 }
 
 function atualizarCardsSecundarios(categoria) {
-    const lista = categoria === "WatchList"
-        ? filmesSalvos.filter(f => f.watchlist === true)
-        : filmesSalvos.filter(f => f.categoria === categoria);
+    const lista = obterListaBase(categoria);
 
     const total = lista.length;
     const media = total > 0
@@ -76,6 +173,82 @@ function atualizarCardsSecundarios(categoria) {
     if (el("card-total"))  el("card-total").innerText  = total;
     if (el("card-media"))  el("card-media").innerText  = media;
     if (el("card-melhor")) el("card-melhor").innerText = melhor;
+    if (categoria === "Assistido") calcularHorasAssistidos(lista);
+}
+
+async function buscarDuracaoFilme(tmdbId) {
+    if (cacheDuracoes[tmdbId] !== undefined) return cacheDuracoes[tmdbId];
+
+    try {
+        const res = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${API_KEY}`);
+        const data = await res.json();
+        const min = data.runtime || 0;
+        cacheDuracoes[tmdbId] = min;
+        localStorage.setItem("cache_duracoes", JSON.stringify(cacheDuracoes));
+        return min;
+    } catch {
+        return 0;
+    }
+}
+
+async function buscarDuracaoSerie(tmdbId) {
+    if (cacheDuracoesSeries[tmdbId] !== undefined) return cacheDuracoesSeries[tmdbId];
+
+    try {
+        const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${API_KEY}&language=pt-BR`);
+        const data = await res.json();
+        const runtimeMedio = Array.isArray(data.episode_run_time) ? (data.episode_run_time[0] || 0) : 0;
+        const episodios = data.number_of_episodes || 0;
+        const minutos = runtimeMedio * episodios;
+        cacheDuracoesSeries[tmdbId] = minutos;
+        localStorage.setItem("cache_duracoes_series", JSON.stringify(cacheDuracoesSeries));
+        return minutos;
+    } catch {
+        return 0;
+    }
+}
+
+async function calcularHorasAssistidos(lista) {
+    const elHoras = document.getElementById("card-horas");
+    if (!elHoras) return;
+
+    const minutosCache = lista.reduce((acc, item) => {
+        if (item.tipo === "serie") return acc + (cacheDuracoesSeries[item.id] || 0);
+        return acc + (cacheDuracoes[item.id] || 0);
+    }, 0);
+    elHoras.innerText = formatarHoras(minutosCache);
+
+    const semCache = lista.filter(item => {
+        if (!item.id) return false;
+        return item.tipo === "serie"
+            ? cacheDuracoesSeries[item.id] === undefined
+            : cacheDuracoes[item.id] === undefined;
+    });
+    if (semCache.length === 0) return;
+
+    const lote = 5;
+    for (let i = 0; i < semCache.length; i += lote) {
+        const grupo = semCache.slice(i, i + lote);
+        await Promise.all(grupo.map(item => item.tipo === "serie"
+            ? buscarDuracaoSerie(item.id)
+            : buscarDuracaoFilme(item.id)
+        ));
+
+        const totalMin = lista.reduce((acc, item) => {
+            if (item.tipo === "serie") return acc + (cacheDuracoesSeries[item.id] || 0);
+            return acc + (cacheDuracoes[item.id] || 0);
+        }, 0);
+        elHoras.innerText = formatarHoras(totalMin);
+    }
+}
+
+function formatarHoras(minutos) {
+    if (!minutos || minutos === 0) return "—";
+    const h = Math.floor(minutos / 60);
+    const m = minutos % 60;
+    if (h === 0) return `${m}min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}min`;
 }
 
 // ---- MODAL ----
@@ -107,7 +280,6 @@ function fecharModal() {
     filmeSelecionado = null;
 }
 
-// ---- ESTRELAS ----
 function ativarEstrelas() {
     document.querySelectorAll(".rating span").forEach(star => {
         star.addEventListener("click", () => {
@@ -119,7 +291,6 @@ function ativarEstrelas() {
     });
 }
 
-// ---- SALVAR ----
 function salvar() {
     if (!filmeSelecionado) return;
 
@@ -136,7 +307,6 @@ function salvar() {
     renderizarLista(categoriaAtual);
 }
 
-// ---- REMOVER ----
 function remover() {
     if (!filmeSelecionado) return;
     if (!confirm(`Remover "${filmeSelecionado.titulo}" da lista?`)) return;
@@ -149,7 +319,6 @@ function remover() {
     renderizarLista(categoriaAtual);
 }
 
-// ---- TOAST ----
 function mostrarToast(mensagem) {
     let toast = document.getElementById("toast");
     if (!toast) {
@@ -162,7 +331,6 @@ function mostrarToast(mensagem) {
     setTimeout(() => toast.classList.remove("show"), 2500);
 }
 
-// ---- FILTRO LOCAL ----
 function ativarFiltroLocal() {
     const buscador = document.getElementById("buscador");
     if (!buscador) return;
@@ -171,7 +339,6 @@ function ativarFiltroLocal() {
     });
 }
 
-// ---- INICIALIZAR ----
 function inicializarPagina(categoria) {
     categoriaAtual = categoria;
     renderizarLista(categoria);
@@ -187,4 +354,9 @@ function inicializarPagina(categoria) {
     document.getElementById("modal").addEventListener("click", (e) => {
         if (e.target === document.getElementById("modal")) fecharModal();
     });
+
+    document.getElementById("watchlist-prev")?.addEventListener("click", () => rolarWatchlist(-1));
+    document.getElementById("watchlist-next")?.addEventListener("click", () => rolarWatchlist(1));
+    document.getElementById("lista-filmes")?.addEventListener("scroll", atualizarControlesCarousel, { passive: true });
+    window.addEventListener("resize", atualizarControlesCarousel);
 }
