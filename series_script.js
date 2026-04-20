@@ -9,6 +9,14 @@ let serieSelecionada = null;
 let filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
 let seriesAtuais = [];
 let notaGeral = 0;
+const temSugestaoPendente = (() => {
+    try {
+        const sugestao = JSON.parse(localStorage.getItem("sugestao_busca") || "null");
+        return sugestao?.tipo === "serie";
+    } catch (err) {
+        return false;
+    }
+})();
 
 let mapaGeneros = {};
 let filtroGeneroAtivo = null;
@@ -16,6 +24,108 @@ let filtroGeneroAtivo = null;
 let temporadasModal = {};
 let temporadaAtiva = 1;
 let totalTemporadas = 0;
+
+function recarregarFilmesSalvos() {
+    filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
+}
+
+function normalizarSerie(serie) {
+    return {
+        ...serie,
+        id: serie.id,
+        name: serie.name || serie.title || serie.titulo || "Sem titulo",
+        title: serie.title || serie.name || serie.titulo || "Sem titulo",
+        poster_path: serie.poster_path || serie.imagem || "",
+        overview: serie.overview || serie.descricao || "",
+        genre_ids: serie.genre_ids || serie.generoIds || [],
+        first_air_date: serie.first_air_date || "",
+        vote_average: typeof serie.vote_average === "number" ? serie.vote_average : 0,
+    };
+}
+
+function carregarSeriesSalvas() {
+    recarregarFilmesSalvos();
+    seriesAtuais = filmesSalvos
+        .filter(f => f.tipo === "serie")
+        .map(normalizarSerie);
+
+    filtroGeneroAtivo = null;
+    const filtroTodos = document.querySelector('.filtros .categoria a[data-id=""]');
+    if (filtroTodos) {
+        document.querySelectorAll(".filtros .categoria a").forEach(b => b.classList.remove("filtro-ativo"));
+        filtroTodos.classList.add("filtro-ativo");
+    }
+
+    renderizarSeries(seriesAtuais);
+}
+
+function obterTemporadasSalvasOrdenadas() {
+    return Object.values(temporadasModal).sort((a, b) => a.numero - b.numero);
+}
+
+function mostrarMensagemEpisodios(mensagem, tipo = "info") {
+    const lista = document.getElementById("episodios-lista");
+    if (!lista) return;
+
+    const cor = tipo === "erro" ? "var(--gold)" : "var(--muted)";
+    lista.innerHTML = `<p style="font-size:13px; color:${cor}; padding:8px 0;">${mensagem}</p>`;
+}
+
+function mostrarErroEpisodios(numero, mensagem) {
+    const lista = document.getElementById("episodios-lista");
+    if (!lista) return;
+
+    lista.innerHTML = `
+        <div style="display:flex; flex-direction:column; gap:10px; padding:10px 0;">
+            <p style="font-size:13px; color:var(--gold); margin:0;">${mensagem}</p>
+            <button type="button" id="tentar-novamente-episodios" style="align-self:flex-start; background:transparent; border:1px solid var(--gold); color:var(--gold); border-radius:999px; padding:6px 12px; cursor:pointer;">
+                Tentar novamente
+            </button>
+        </div>
+    `;
+
+    const botao = document.getElementById("tentar-novamente-episodios");
+    if (botao) {
+        botao.addEventListener("click", () => carregarTemporada(serieSelecionada?.id, numero));
+    }
+}
+
+function renderizarTemporadasSalvasNoModal(serieId) {
+    const temporadasSalvas = obterTemporadasSalvasOrdenadas();
+    if (temporadasSalvas.length === 0) return false;
+
+    totalTemporadas = temporadasSalvas.length;
+    temporadaAtiva = temporadasSalvas[0].numero || 1;
+    renderizarAbasTemporadas(serieId);
+    atualizarEstrelasTemporada(temporadasModal[temporadaAtiva]?.nota || 0);
+
+    const label = document.getElementById("label-nota-temporada");
+    if (label) label.innerText = `Nota da temporada ${temporadaAtiva}`;
+
+    renderizarEpisodios(temporadaAtiva);
+    return true;
+}
+
+function hidratarTemporadaPrefetch(temporadaData) {
+    if (!temporadaData || !Array.isArray(temporadaData.episodes) || temporadaData.episodes.length === 0) {
+        return false;
+    }
+
+    temporadasModal[1] = {
+        numero: 1,
+        nota: temporadasModal[1]?.nota || 0,
+        episodios: temporadaData.episodes.map(ep => {
+            const salvo = temporadasModal[1]?.episodios?.find(e => e.numero === ep.episode_number);
+            return {
+                numero: ep.episode_number,
+                nome: ep.name,
+                nota: salvo?.nota || 0
+            };
+        })
+    };
+
+    return true;
+}
 
 // ---------------- GÊNEROS ----------------
 
@@ -64,7 +174,7 @@ function ativarFiltros() {
 
 function aplicarFiltroGenero() {
     if (!filtroGeneroAtivo) { renderizarSeries(seriesAtuais); return; }
-    const filtradas = seriesAtuais.filter(s => Array.isArray(s.genre_ids) && s.genre_ids.includes(filtroGeneroAtivo));
+    const filtradas = seriesAtuais.filter(s => Array.isArray(normalizarSerie(s).genre_ids) && normalizarSerie(s).genre_ids.includes(filtroGeneroAtivo));
     renderizarSeries(filtradas);
     if (filtradas.length === 0) mostrarToast(`Nenhum resultado para "${mapaGeneros[filtroGeneroAtivo] || "esse gênero"}".`);
 }
@@ -112,14 +222,59 @@ buscador.addEventListener("input", () => {
 document.getElementById("buscar").addEventListener("click", () => buscarSeries(buscador.value.trim()));
 
 async function buscarSeries(query) {
+    if (query.length === 0) {
+        carregarSeriesSalvas();
+        return;
+    }
     if (query.length < 3) return;
     try {
         const res = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`);
         const data = await res.json();
-        seriesAtuais = data.results || [];
+        seriesAtuais = (data.results || []).map(normalizarSerie);
         filtroGeneroAtivo ? aplicarFiltroGenero() : renderizarSeries(seriesAtuais);
     } catch (err) {
         mostrarToast("Erro ao buscar. Verifique sua conexão.");
+    }
+}
+
+async function processarSugestaoPendente() {
+    const sugestaoRaw = localStorage.getItem("sugestao_busca");
+    if (!sugestaoRaw) return;
+
+    let sugestao;
+    try {
+        sugestao = JSON.parse(sugestaoRaw);
+    } catch (err) {
+        localStorage.removeItem("sugestao_busca");
+        return;
+    }
+
+    if (sugestao.tipo !== "serie") return;
+
+    try {
+        let serie = sugestao.detalhes || sugestao.item;
+
+        if (!serie || serie.id !== sugestao.id) {
+            const res = await fetch(`https://api.themoviedb.org/3/tv/${sugestao.id}?api_key=${API_KEY}&language=pt-BR`);
+            serie = await res.json();
+        }
+
+        if (!serie || serie.success === false || !serie.id) {
+            throw new Error("Série não encontrada");
+        }
+
+        seriesAtuais = [normalizarSerie(serie)];
+        filtroGeneroAtivo = null;
+        renderizarSeries(seriesAtuais);
+        if (sugestao.temporada1) {
+            hidratarTemporadaPrefetch(sugestao.temporada1);
+        }
+        await abrirModalSerie(serie);
+    } catch (err) {
+        console.error("Erro ao abrir sugestão:", err);
+        mostrarToast("Não foi possível abrir essa sugestão.");
+    } finally {
+        localStorage.removeItem("sugestao_busca");
     }
 }
 
@@ -133,7 +288,8 @@ function renderizarSeries(lista) {
         atualizarContador();
         return;
     }
-    lista.forEach(serie => {
+    lista.forEach(item => {
+        const serie = normalizarSerie(item);
         const poster = serie.poster_path
             ? `https://image.tmdb.org/t/p/w500${serie.poster_path}`
             : "https://via.placeholder.com/250x350?text=Sem+Imagem";
@@ -142,12 +298,13 @@ function renderizarSeries(lista) {
         const ano = (serie.first_air_date || "").slice(0, 4) || "—";
         const salvo = filmesSalvos.find(f => f.id === serie.id && f.tipo === "serie");
         const badgeStatus = salvo ? `<span class="status">${salvo.categoria}</span>` : "";
+        const badgeTipo = `<span class="badge-tipo badge-serie">Série</span>`;
         const div = document.createElement("div");
         div.classList.add("movie");
         div.innerHTML = `
             <img src="${poster}" alt="${titulo}">
             ${badgeStatus}
-            <span class="badge-tipo badge-serie" style="top:38px;">Série</span>
+            ${badgeTipo}
             <div class="info">
                 <h3 class="nome">${titulo}</h3>
                 <span class="diretor">${ano}</span>
@@ -164,7 +321,9 @@ function renderizarSeries(lista) {
 // ---------------- MODAL SÉRIE ----------------
 
 async function abrirModalSerie(serie) {
+    serie = normalizarSerie(serie);
     serieSelecionada = serie;
+    const temporadasPrefetch = { ...temporadasModal };
     temporadasModal = {};
     temporadaAtiva = 1;
     notaGeral = 0;
@@ -178,6 +337,7 @@ async function abrirModalSerie(serie) {
     document.getElementById("notaGeral").innerText = "⭐ Nota geral TMDB: " + (serie.vote_average?.toFixed(1) || "0");
     document.getElementById("infoExtra").innerText = generosTexto ? "📺 " + generosTexto : "";
 
+    recarregarFilmesSalvos();
     const salvo = filmesSalvos.find(f => f.id === serie.id && f.tipo === "serie");
     notaGeral = salvo?.nota || 0;
     document.getElementById("suaNota").innerText = notaGeral ? "⭐ Sua nota geral: " + notaGeral : "Você ainda não avaliou";
@@ -188,19 +348,42 @@ async function abrirModalSerie(serie) {
     if (salvo?.temporadas) {
         salvo.temporadas.forEach(t => { temporadasModal[t.numero] = t; });
     }
+    Object.values(temporadasPrefetch).forEach(t => {
+        if (!temporadasModal[t.numero]) {
+            temporadasModal[t.numero] = t;
+        }
+    });
+
+    modal.classList.add("active");
+    const temFallbackLocal = renderizarTemporadasSalvasNoModal(serie.id);
+
+    if (!temFallbackLocal) {
+        mostrarMensagemEpisodios("Carregando episodios...");
+    }
 
     mostrarToast("Carregando temporadas...");
     try {
         const res = await fetch(`https://api.themoviedb.org/3/tv/${serie.id}?api_key=${API_KEY}&language=pt-BR`);
         const detalhes = await res.json();
-        totalTemporadas = detalhes.number_of_seasons || 1;
+        totalTemporadas = detalhes.number_of_seasons || obterTemporadasSalvasOrdenadas().length || 1;
         renderizarAbasTemporadas(serie.id);
-        await carregarTemporada(serie.id, 1);
+        const primeiraTemporada = temFallbackLocal ? temporadaAtiva : 1;
+        await carregarTemporada(serie.id, primeiraTemporada);
     } catch (err) {
-        mostrarToast("Erro ao carregar temporadas.");
-    }
+        const temporadasSalvas = obterTemporadasSalvasOrdenadas();
+        totalTemporadas = temporadasSalvas.length || serie.number_of_seasons || 1;
+        renderizarAbasTemporadas(serie.id);
 
-    modal.classList.add("active");
+        if (temporadasSalvas.length > 0) {
+            mostrarToast("Usando dados salvos da série.");
+            temporadaAtiva = temporadasSalvas[0].numero || 1;
+            atualizarEstrelasTemporada(temporadasModal[temporadaAtiva]?.nota || 0);
+            renderizarEpisodios(temporadaAtiva);
+        } else {
+            mostrarMensagemEpisodios("Nao foi possivel carregar as temporadas agora. Tente novamente em alguns instantes.", "erro");
+            mostrarToast("Erro ao carregar temporadas.");
+        }
+    }
 }
 
 // ---------------- ESTRELAS GERAL ----------------
@@ -265,12 +448,31 @@ async function trocarTemporada(serieId, numero) {
 async function carregarTemporada(serieId, numero) {
     const lista = document.getElementById("episodios-lista");
     if (!lista) return;
-    lista.innerHTML = `<p style="font-size:13px; color:var(--muted);">Carregando episódios...</p>`;
+    mostrarMensagemEpisodios("Carregando episodios...");
 
     try {
         const res = await fetch(`https://api.themoviedb.org/3/tv/${serieId}/season/${numero}?api_key=${API_KEY}&language=pt-BR`);
+        if (!res.ok) {
+            throw new Error(`Falha HTTP ${res.status}`);
+        }
         const data = await res.json();
+        if (data?.success === false) {
+            throw new Error(data.status_message || "Falha ao carregar temporada");
+        }
         const episodios = data.episodes || [];
+        const temporadaSalva = temporadasModal[numero];
+
+        if (episodios.length === 0) {
+            if (temporadaSalva?.episodios?.length) {
+                atualizarEstrelasTemporada(temporadaSalva.nota || 0);
+                renderizarEpisodios(numero);
+                mostrarToast(`Temporada ${numero} aberta com dados salvos.`);
+                return;
+            }
+
+            mostrarMensagemEpisodios(`Nenhum episodio foi encontrado para a temporada ${numero}.`, "erro");
+            return;
+        }
 
         if (!temporadasModal[numero]) {
             temporadasModal[numero] = {
@@ -279,10 +481,16 @@ async function carregarTemporada(serieId, numero) {
                 episodios: episodios.map(ep => ({ numero: ep.episode_number, nome: ep.name, nota: 0 }))
             };
         } else {
+            temporadasModal[numero].episodios = temporadasModal[numero].episodios || [];
             episodios.forEach(ep => {
                 const existe = temporadasModal[numero].episodios.find(e => e.numero === ep.episode_number);
-                if (!existe) temporadasModal[numero].episodios.push({ numero: ep.episode_number, nome: ep.name, nota: 0 });
+                if (!existe) {
+                    temporadasModal[numero].episodios.push({ numero: ep.episode_number, nome: ep.name, nota: 0 });
+                    return;
+                }
+                existe.nome = ep.name || existe.nome;
             });
+            temporadasModal[numero].episodios.sort((a, b) => a.numero - b.numero);
         }
 
         // Mostrar nota salva da temporada
@@ -292,7 +500,17 @@ async function carregarTemporada(serieId, numero) {
 
         renderizarEpisodios(numero);
     } catch (err) {
-        lista.innerHTML = `<p style="font-size:13px; color:var(--muted);">Erro ao carregar episódios.</p>`;
+        const temporadaSalva = temporadasModal[numero];
+
+        if (temporadaSalva?.episodios?.length) {
+            atualizarEstrelasTemporada(temporadaSalva.nota || 0);
+            renderizarEpisodios(numero);
+            mostrarToast(`Temporada ${numero} aberta com dados salvos.`);
+            return;
+        }
+
+        console.error("Erro ao carregar episodios:", err);
+        mostrarErroEpisodios(numero, `Nao foi possivel carregar os episodios da temporada ${numero}.`);
     }
 }
 
@@ -303,6 +521,11 @@ function renderizarEpisodios(numTemporada) {
     if (!lista) return;
     const t = temporadasModal[numTemporada];
     if (!t) return;
+
+    if (!Array.isArray(t.episodios) || t.episodios.length === 0) {
+        mostrarMensagemEpisodios(`Nenhum episodio salvo para a temporada ${numTemporada}.`, "erro");
+        return;
+    }
 
     lista.innerHTML = "";
     t.episodios.forEach(ep => {
@@ -370,7 +593,7 @@ document.getElementById("salvar").addEventListener("click", () => {
         nota: notaGeral,
         categoria,
         watchlist,
-        temporadas: Object.values(temporadasModal),
+        temporadas: obterTemporadasSalvasOrdenadas(),
     };
 
     if (index >= 0) {
@@ -380,17 +603,20 @@ document.getElementById("salvar").addEventListener("click", () => {
     }
 
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
+    recarregarFilmesSalvos();
     atualizarCards();
     // Chama atualizarNavCounts do nav-counts.js
     if (typeof atualizarNavCounts === "function") atualizarNavCounts();
     mostrarToast("Série salva com sucesso!");
     modal.classList.remove("active");
 
-    if (seriesAtuais.length > 0) {
+    if (buscador.value.trim().length > 0 && seriesAtuais.length > 0) {
         renderizarSeries(filtroGeneroAtivo
-            ? seriesAtuais.filter(s => s.genre_ids?.includes(filtroGeneroAtivo))
+            ? seriesAtuais.filter(s => normalizarSerie(s).genre_ids?.includes(filtroGeneroAtivo))
             : seriesAtuais
         );
+    } else {
+        carregarSeriesSalvas();
     }
 });
 
@@ -428,4 +654,9 @@ function mostrarToast(mensagem) {
 }
 
 atualizarCards();
-carregarGeneros();
+carregarGeneros().then(() => {
+    if (temSugestaoPendente) {
+        return processarSugestaoPendente();
+    }
+    carregarSeriesSalvas();
+});
