@@ -108,6 +108,37 @@ function atualizarCarouselWatchlist() {
     atualizarControlesCarousel();
 }
 
+function renderizarWatchlistSpotlight(lista) {
+    const el = document.getElementById("watchlist-spotlight");
+    if (!el) return;
+
+    const progress = window.CineListState?.getMonthlyGoalProgress?.(filmesSalvos);
+    const favoritosSugestoes = window.CineListState?.getFavoriteSuggestions?.() || [];
+
+    const destaques = [];
+    if (progress?.goal?.items?.length) {
+        destaques.push(`Meta do mês: ${progress.current}/${progress.target} concluídos`);
+    }
+    if (favoritosSugestoes.length) {
+        destaques.push(`${favoritosSugestoes.length} sugest${favoritosSugestoes.length > 1 ? "ões favoritadas" : "ão favoritada"} esperando um espaço na sua fila`);
+    }
+    if (lista.length >= 6) {
+        destaques.push("Sua watchlist já está robusta: vale priorizar os títulos da meta para não virar fila infinita");
+    }
+
+    if (destaques.length === 0) {
+        el.classList.add("hidden");
+        el.innerHTML = "";
+        return;
+    }
+
+    el.innerHTML = `
+        <p>${destaques.join(" • ")}</p>
+        <a href="perfil.html">Abrir perfil e metas</a>
+    `;
+    el.classList.remove("hidden");
+}
+
 function rolarWatchlist(direcao) {
     const container = document.getElementById("lista-filmes");
     if (!container) return;
@@ -190,6 +221,7 @@ function renderizarLista(categoria, filtro = "") {
         atualizarEstadoVazio(categoria, filtro, listaBase, lista);
         if (contador) contador.innerText = 0;
         atualizarCardsSecundarios(categoria);
+        if (categoria === "WatchList") renderizarWatchlistSpotlight(lista);
         atualizarControlesCarousel();
         return;
     }
@@ -228,6 +260,7 @@ function renderizarLista(categoria, filtro = "") {
     });
 
     atualizarCardsSecundarios(categoria);
+    if (categoria === "WatchList") renderizarWatchlistSpotlight(lista);
     atualizarCarouselWatchlist();
     iniciarInteracaoCarousel();
 }
@@ -308,11 +341,26 @@ async function calcularHorasAssistidos(lista) {
     const elHoras = document.getElementById("card-horas");
     if (!elHoras) return;
 
-    const minutosCache = lista.reduce((acc, item) => {
-        if (item.tipo === "serie") return acc + (cacheDuracoesSeries[item.id] || 0);
-        return acc + (cacheDuracoes[item.id] || 0);
-    }, 0);
-    elHoras.innerText = formatarHoras(minutosCache);
+    const somarMinutosPorTipo = () => lista.reduce((acc, item) => {
+        if (item.tipo === "serie") {
+            acc.series += cacheDuracoesSeries[item.id] || 0;
+            return acc;
+        }
+        acc.filmes += cacheDuracoes[item.id] || 0;
+        return acc;
+    }, { filmes: 0, series: 0 });
+
+    const atualizarCardHoras = ({ filmes, series }) => {
+        const total = filmes + series;
+        elHoras.innerText = formatarHoras(total);
+
+        const elHorasFilmes = document.getElementById("card-horas-filmes");
+        const elHorasSeries = document.getElementById("card-horas-series");
+        if (elHorasFilmes) elHorasFilmes.innerText = `Filmes: ${formatarHoras(filmes)}`;
+        if (elHorasSeries) elHorasSeries.innerText = `Séries: ${formatarHoras(series)}`;
+    };
+
+    atualizarCardHoras(somarMinutosPorTipo());
 
     const semCache = lista.filter(item => {
         if (!item.id) return false;
@@ -330,11 +378,7 @@ async function calcularHorasAssistidos(lista) {
             : buscarDuracaoFilme(item.id)
         ));
 
-        const totalMin = lista.reduce((acc, item) => {
-            if (item.tipo === "serie") return acc + (cacheDuracoesSeries[item.id] || 0);
-            return acc + (cacheDuracoes[item.id] || 0);
-        }, 0);
-        elHoras.innerText = formatarHoras(totalMin);
+        atualizarCardHoras(somarMinutosPorTipo());
     }
 }
 
@@ -363,6 +407,7 @@ function abrirModal(filme) {
         : "Sem nota";
     document.getElementById("categoriaFilme").value = filme.categoria || categoriaAtual;
     atualizarVisualCategoriaSelect();
+    atualizarDisponibilidadeReviewRapido();
     document.getElementById("watchlist").checked = filme.watchlist || false;
 
     window.atualizarEstrelas(document.querySelector(".rating"), notaSelecionada);
@@ -388,11 +433,20 @@ function salvar() {
     const index = filmesSalvos.findIndex(f => f.id === filmeSelecionado.id && f.tipo === filmeSelecionado.tipo);
     if (index < 0) return;
 
+    const categoria = document.getElementById("categoriaFilme").value;
+    const reviewAtual = categoria === "Assistido"
+        ? (filmesSalvos[index].review || null)
+        : null;
     filmesSalvos[index].nota = notaSelecionada;
-    filmesSalvos[index].categoria = document.getElementById("categoriaFilme").value;
+    filmesSalvos[index].categoria = categoria;
     filmesSalvos[index].watchlist = document.getElementById("watchlist").checked;
+    filmesSalvos[index].review = reviewAtual;
 
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
+    const conquestInfo = window.CineListState?.computeAchievements?.(filmesSalvos);
+    conquestInfo?.newlyUnlocked?.forEach((achievement) => {
+        mostrarToast(`Conquista desbloqueada: ${achievement.title}`);
+    });
     mostrarToast("Salvo!");
     fecharModal();
     renderizarLista(categoriaAtual);
@@ -424,9 +478,40 @@ function inicializarPagina(categoria) {
     configurarAvaliacaoModal();
     ativarFiltroLocal();
     ativarVisualCategoriaSelect();
+    document.getElementById("categoriaFilme")?.addEventListener("change", () => atualizarDisponibilidadeReviewRapido());
 
     document.getElementById("fecharModal").addEventListener("click", fecharModal);
     document.getElementById("salvar").addEventListener("click", salvar);
+    document.getElementById("abrirReviewRapido")?.addEventListener("click", () => {
+        if (!filmeSelecionado) {
+            mostrarToast("Abra um título antes de escrever a review.");
+            return;
+        }
+        if (!podeCriarReview(document.getElementById("categoriaFilme")?.value)) {
+            mostrarToast("A review só pode ser feita para títulos marcados como Assistido.");
+            return;
+        }
+
+        abrirReviewRapido({
+            item: filmeSelecionado,
+            onSave: (review) => {
+                filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
+                const index = filmesSalvos.findIndex((item) => item.id === filmeSelecionado.id && item.tipo === filmeSelecionado.tipo);
+                if (index < 0) {
+                    mostrarToast("Salve o título antes de adicionar uma review.");
+                    return;
+                }
+                if (filmesSalvos[index].categoria !== "Assistido") {
+                    mostrarToast("A review só pode ser salva em títulos assistidos.");
+                    return;
+                }
+                filmesSalvos[index].review = review;
+                localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
+                renderizarLista(categoriaAtual, filtroAtual);
+                mostrarToast("Review salva.");
+            }
+        });
+    });
 
     const btnRemover = document.getElementById("remover");
     if (btnRemover) btnRemover.addEventListener("click", remover);

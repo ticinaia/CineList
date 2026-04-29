@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineList — Perfil</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="header" role="banner">
+        <a href="index.html" class="logo-link"><h1>Cine<strong>List</strong></h1></a>
+        <nav class="menu">
+            <a href="index.html">Filmes <span id="nav-count-filmes">0</span></a>
+            <a href="series.html">Séries <span id="nav-count-series">0</span></a>
+            <a href="assistidos.html">Assistidos <span id="nav-count-assistidos">0</span></a>
+            <a href="watchlist.html">WatchList <span id="nav-count-watchlist">0</span></a>
+            <a href="assistindo.html">Assistindo <span id="nav-count-assistindo">0</span></a>
+            <a href="sugestoes.html">Sugestões <span class="menu-star">✦</span></a>
+            <a href="perfil.html">Perfil</a>
+        </nav>
+    </header>
+
+    <main class="profile-page">
+        <section class="profile-hero">
+            <div>
+                <p class="profile-kicker">Seu canto cinéfilo</p>
+                <h2 id="profile-name">Perfil</h2>
+                <p id="profile-headline" class="profile-headline"></p>
+                <p id="profile-bio" class="profile-bio"></p>
+            </div>
+            <div class="profile-hero-actions">
+                <button type="button" id="editarPerfilBtn">Editar perfil</button>
+            </div>
+        </section>
+
+        <section class="cards" aria-label="Resumo do perfil">
+            <div class="card">
+                <p class="label">Biblioteca</p>
+                <h2 id="profile-total">0</h2>
+                <span>títulos salvos</span>
+            </div>
+            <div class="card">
+                <p class="label">Assistidos</p>
+                <h2 id="profile-watched">0</h2>
+                <span>já concluídos</span>
+            </div>
+            <div class="card">
+                <p class="label">Reviews</p>
+                <h2 id="profile-reviews">0</h2>
+                <span>anotações suas</span>
+            </div>
+            <div class="card">
+                <p class="label">Horas</p>
+                <h2 id="profile-hours">—</h2>
+                <span>tempo assistido</span>
+            </div>
+        </section>
+
+        <section class="profile-grid">
+            <div class="profile-panel">
+                <div class="panel-head">
+                    <h3>Meta do mês</h3>
+                    <span id="goal-month-label"></span>
+                </div>
+                <form id="goal-form" class="goal-form">
+                    <input id="goal-title" type="text" placeholder="Nome da meta">
+                    <input id="goal-target" type="number" min="1" max="30" placeholder="Quantidade">
+                    <textarea id="goal-notes" rows="3" placeholder="Ex: priorizar ficção científica e os favoritos da watchlist"></textarea>
+                    <button type="submit">Salvar meta</button>
+                </form>
+                <div id="goal-progress" class="goal-progress"></div>
+                <div id="goal-items" class="goal-items"></div>
+                <div id="goal-candidates" class="goal-candidates"></div>
+            </div>
+
+            <div class="profile-panel">
+                <div class="panel-head">
+                    <h3>Conquistas</h3>
+                    <span>Gamificação</span>
+                </div>
+                <div id="achievement-list" class="achievement-list"></div>
+            </div>
+        </section>
+
+        <section class="profile-grid">
+            <div class="profile-panel">
+                <div class="panel-head">
+                    <h3>Sugestões favoritadas</h3>
+                    <span>Para voltar depois</span>
+                </div>
+                <div id="favorite-suggestions" class="mini-media-list"></div>
+            </div>
+
+            <div class="profile-panel">
+                <div class="panel-head">
+                    <h3>Watchlist em foco</h3>
+                    <span>Atalhos para a meta</span>
+                </div>
+                <div id="watchlist-focus" class="mini-media-list"></div>
+            </div>
+        </section>
+    </main>
+
+    <div id="profile-edit-modal" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="profileEditTitle">
+            <h2 id="profileEditTitle">Editar perfil</h2>
+            <label for="profile-headline-input">Frase de destaque</label>
+            <input id="profile-headline-input" type="text" placeholder="Ex: Meu ano das maratonas inteligentes">
+            <label for="profile-bio-input">Bio</label>
+            <textarea id="profile-bio-input" rows="4" placeholder="O tipo de filme e série que você mais gosta."></textarea>
+            <div class="modal-actions">
+                <button type="button" id="salvarPerfilBtn">Salvar</button>
+                <button type="button" id="fecharPerfilModalBtn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="cinelist_state.js"></script>
+    <script src="ui_shared.js"></script>
+    <script src="nav_counts.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>

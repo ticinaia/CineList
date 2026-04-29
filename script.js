@@ -404,6 +404,7 @@ function abrirModalFilme(filme) {
     document.getElementById("watchlist").checked = salvo?.watchlist || false;
     document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
     atualizarVisualCategoriaSelect();
+    atualizarDisponibilidadeReviewRapido();
 
     configurarAvaliacaoModal();
     ativarVisualCategoriaSelect();
@@ -432,6 +433,7 @@ async function abrirModalSerie(serie) {
     document.getElementById("watchlist").checked = salvo?.watchlist || false;
     document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
     atualizarVisualCategoriaSelect();
+    atualizarDisponibilidadeReviewRapido();
 
     const secaoSeries = document.getElementById("secao-series");
     if (secaoSeries) secaoSeries.style.display = "block";
@@ -610,16 +612,25 @@ document.getElementById("salvar").addEventListener("click", () => {
         nota:     notaSelecionada,
         categoria,
         watchlist,
+        review: categoria === "Assistido" ? (filmesSalvos[index]?.review || null) : null
     };
 
     if (filmeSelecionado.tipo === "serie") {
         obj.temporadas = Object.values(temporadasModal);
+        obj.totalTemporadas = totalTemporadas;
+        obj.totalEpisodios = Object.values(temporadasModal).reduce((acc, temporada) => {
+            return acc + (Array.isArray(temporada.episodios) ? temporada.episodios.length : 0);
+        }, 0);
     }
 
     if (index >= 0) filmesSalvos[index] = obj;
     else filmesSalvos.push(obj);
 
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
+    const conquestInfo = window.CineListState?.computeAchievements?.(filmesSalvos);
+    conquestInfo?.newlyUnlocked?.forEach((achievement) => {
+        mostrarToast(`Conquista desbloqueada: ${achievement.title}`);
+    });
     atualizarCards();
     if (typeof atualizarNavCounts === "function") atualizarNavCounts();
     mostrarToast("Salvo com sucesso!");
@@ -636,6 +647,44 @@ document.getElementById("salvar").addEventListener("click", () => {
         carregarHome();
     }
 });
+
+document.getElementById("abrirReviewRapido")?.addEventListener("click", () => {
+    if (!filmeSelecionado) {
+        mostrarToast("Abra um título antes de escrever a review.");
+        return;
+    }
+    if (!podeCriarReview(document.getElementById("categoriaFilme")?.value)) {
+        mostrarToast("A review só pode ser feita para títulos marcados como Assistido.");
+        return;
+    }
+
+    const atual = filmesSalvos.find((item) => item.id === filmeSelecionado.id && item.tipo === filmeSelecionado.tipo);
+    abrirReviewRapido({
+        item: { ...filmeSelecionado, review: atual?.review },
+        onSave: (review) => {
+            filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
+            const index = filmesSalvos.findIndex((item) => item.id === filmeSelecionado.id && item.tipo === filmeSelecionado.tipo);
+            if (index < 0) {
+                mostrarToast("Salve o título antes de adicionar uma review.");
+                return;
+            }
+            if (filmesSalvos[index].categoria !== "Assistido") {
+                mostrarToast("A review só pode ser salva em títulos assistidos.");
+                return;
+            }
+            filmesSalvos[index].review = review;
+            localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
+            mostrarToast("Review salva.");
+            if (filmesAtuais.length > 0) {
+                renderizarFilmes(filmesAtuais);
+            } else {
+                carregarHome();
+            }
+        }
+    });
+});
+
+document.getElementById("categoriaFilme")?.addEventListener("change", () => atualizarDisponibilidadeReviewRapido());
 
 
 function atualizarCards() {

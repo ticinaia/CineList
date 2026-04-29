@@ -141,7 +141,16 @@ function criarCardSugestao(item, tipo) {
         tipo,
         ano,
         notaTexto: `⭐ ${nota}`,
-        onActivate: aoClicarSugestao(item, tipo)
+        onActivate: aoClicarSugestao(item, tipo),
+        showSuggestionFavorite: true,
+        onToggleFavoriteSuggestion: (itemAtual, tipoAtual, botao) => {
+            const ativo = window.CineListState?.toggleFavoriteSuggestion?.(itemAtual, tipoAtual);
+            if (!botao) return;
+            botao.classList.toggle("active", Boolean(ativo));
+            botao.setAttribute("aria-pressed", ativo ? "true" : "false");
+            botao.setAttribute("aria-label", ativo ? "Remover dos favoritos" : "Favoritar sugestão");
+            mostrarToast(ativo ? "Sugestão favoritada." : "Sugestão removida dos favoritos.");
+        }
     });
 }
 

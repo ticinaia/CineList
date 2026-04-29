@@ -150,7 +150,7 @@ function renderizarAuthHeader() {
 
     document.getElementById("auth-settings")?.addEventListener("click", () => {
         fecharDropdown();
-        alert("As configuracoes do perfil podem entrar aqui em seguida.");
+        window.location.href = "perfil.html";
     });
 
     document.getElementById("auth-logout")?.addEventListener("click", () => {

@@ -5,6 +5,8 @@
     --card-bg: #f4efe9;
     --ink: #1a1612;
     --gold: #C9A84C;
+    --film-accent: #c9a84c;
+    --series-accent: #2f6f6c;
     --muted: #8a817c;
     --border: #e2dbd0;
 }
@@ -525,6 +527,18 @@ main {
     color: var(--ink);
 }
 
+.card-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.card-breakdown span {
+    font-size: 12px;
+    color: var(--muted);
+}
+
 .card:hover {
     transform: scale(1.05);
     background-color: var(--muted);
@@ -552,6 +566,10 @@ main {
 
 .card:hover span {
     color: var(--ink);
+}
+
+.card:hover .card-breakdown span {
+    color: rgba(26, 22, 18, 0.88);
 }
 
 /* ---- FILTROS ---- */
@@ -605,6 +623,14 @@ main {
     appearance: none;
 }
 
+.movie-filme {
+    border-top: 3px solid rgba(201, 168, 76, 0.85);
+}
+
+.movie-serie {
+    border-top: 3px solid rgba(47, 111, 108, 0.9);
+}
+
 .movie:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 24px rgba(0,0,0,0.12);
@@ -627,7 +653,19 @@ main {
 
 .movie .diretor,
 .movie .genero {
-    font-size: 16px;
+    font-size: 14px;
+    color: var(--ink);
+}
+
+.goal-pill {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(201, 168, 76, 0.14);
     color: var(--ink);
 }
 
@@ -642,6 +680,44 @@ main {
     position: absolute;
     top: 14px;
     right: 14px;
+}
+
+.suggestion-favorite-btn {
+    position: absolute;
+    right: 14px;
+    bottom: 118px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(26, 22, 18, 0.16);
+    background: rgba(244, 239, 233, 0.92);
+    color: var(--muted);
+    font-size: 15px;
+    cursor: pointer;
+    z-index: 2;
+    transition: transform 0.15s, color 0.15s, background 0.15s;
+}
+
+.suggestion-favorite-btn:hover,
+.suggestion-favorite-btn.active {
+    background: #b83b5e;
+    color: #fff;
+    transform: scale(1.06);
+}
+
+#review-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+#review-modal.active {
+    display: flex;
 }
 
 #modal {
@@ -686,6 +762,103 @@ main {
     font-size: 13px;
     color: var(--muted);
     font-weight: 500;
+}
+
+.review-modal-content textarea,
+.review-modal-content input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.72);
+    padding: 12px 14px;
+    font: inherit;
+    color: var(--ink);
+}
+
+.review-modal-content textarea {
+    resize: vertical;
+    min-height: 112px;
+}
+
+.review-subtitle {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.review-hint {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: -6px;
+}
+
+.card-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.card-tag-list span {
+    background: rgba(26, 22, 18, 0.08);
+    color: var(--ink);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 11px;
+}
+
+.card-tag-list-preview {
+    min-height: 22px;
+}
+
+.card-review-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.card-review-preview p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.series-progress {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 4px;
+}
+
+.series-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.series-progress-meta strong {
+    color: var(--series-accent);
+}
+
+.series-progress-bar {
+    width: 100%;
+    height: 7px;
+    background: rgba(47, 111, 108, 0.14);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.series-progress-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--series-accent), #4f9d99);
+}
+
+.series-progress p {
+    font-size: 11px;
+    color: var(--muted);
 }
 
 #infoExtra {
@@ -879,6 +1052,13 @@ main {
     color: var(--gold);
     text-decoration: underline;
     font-size: 14px;
+}
+
+.feedback-filtro a {
+    color: var(--gold);
+    text-decoration: underline;
+    font-size: 13px;
+    white-space: nowrap;
 }
 
 .vazio button,
@@ -1219,14 +1399,14 @@ main {
 
 .badge-filme {
     background: rgba(201, 168, 76, 0.15);
-    color: var(--gold);
-    border: 1px solid var(--gold);
+    color: var(--film-accent);
+    border: 1px solid var(--film-accent);
 }
 
 .badge-serie {
-    background: rgba(26, 22, 18, 0.75);
-    color: var(--card-bg);
-    border: 1px solid var(--card-bg);
+    background: rgba(47, 111, 108, 0.12);
+    color: var(--series-accent);
+    border: 1px solid var(--series-accent);
 }
 
 #secao-series {
@@ -1299,6 +1479,11 @@ main {
     gap: 8px;
 }
 
+.ep-row.is-watched {
+    border-color: rgba(47, 111, 108, 0.45);
+    background: linear-gradient(135deg, rgba(79, 157, 153, 0.08), rgba(244, 239, 233, 0.96));
+}
+
 .ep-info {
     display: flex;
     align-items: center;
@@ -1326,6 +1511,178 @@ main {
     display: flex;
     gap: 3px;
     flex-shrink: 0;
+}
+
+.ep-watch {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.ep-watch input {
+    accent-color: var(--series-accent);
+}
+
+.profile-page {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.profile-hero {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 28px;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at top right, rgba(201, 168, 76, 0.22), transparent 28%),
+        linear-gradient(135deg, #211a15, #433429 58%, #8f7540 130%);
+    color: var(--card-bg);
+}
+
+.profile-kicker {
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    font-size: 11px;
+    opacity: 0.72;
+    margin-bottom: 8px;
+}
+
+.profile-hero h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 34px;
+    margin-bottom: 10px;
+}
+
+.profile-headline,
+.profile-bio {
+    max-width: 720px;
+    line-height: 1.5;
+}
+
+.profile-hero-actions button,
+.goal-form button,
+.mini-media-card button {
+    border: 1px solid rgba(201, 168, 76, 0.4);
+    background: rgba(244, 239, 233, 0.08);
+    color: inherit;
+    border-radius: 999px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font: inherit;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.profile-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: baseline;
+}
+
+.panel-head h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    font-weight: 400;
+}
+
+.panel-head span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.goal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.goal-form input,
+.goal-form textarea,
+#profile-headline-input,
+#profile-bio-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.78);
+    padding: 12px 14px;
+    font: inherit;
+}
+
+.goal-items,
+.goal-candidates,
+.mini-media-list,
+.achievement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mini-media-card,
+.achievement-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.55);
+}
+
+.mini-media-card div,
+.achievement-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mini-media-card strong,
+.achievement-card strong {
+    font-size: 14px;
+}
+
+.mini-media-card span,
+.achievement-card p,
+.achievement-card span,
+.empty-inline,
+.goal-candidates h4 {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.achievement-card.unlocked {
+    border-color: rgba(201, 168, 76, 0.55);
+    background: linear-gradient(135deg, rgba(201, 168, 76, 0.14), rgba(255, 255, 255, 0.72));
+}
+
+@media (max-width: 900px) {
+    .profile-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-hero {
+        flex-direction: column;
+    }
 }
 
 .ep-star {

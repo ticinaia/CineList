@@ -124,6 +124,26 @@ function mostrarErroEpisodios(numero, mensagem) {
     }
 }
 
+function atualizarResumoProgressoSerie() {
+    const el = document.getElementById("progressoSerie");
+    if (!el || !window.CineListState?.computeSeriesProgress) return;
+
+    const progress = window.CineListState.computeSeriesProgress({
+        temporadas: obterTemporadasSalvasOrdenadas(),
+        totalTemporadas,
+        totalEpisodios: obterTemporadasSalvasOrdenadas().reduce((acc, temporada) => {
+            return acc + (Array.isArray(temporada.episodios) ? temporada.episodios.length : 0);
+        }, 0)
+    });
+
+    if (!progress.totalEpisodes && !progress.totalSeasons) {
+        el.innerText = "Marque episódios como vistos para acompanhar o progresso real.";
+        return;
+    }
+
+    el.innerText = `Progresso da série: ${progress.percent}% • ${progress.watchedEpisodes}/${progress.totalEpisodes || progress.watchedEpisodes} episódios vistos`;
+}
+
 function renderizarTemporadasSalvasNoModal(serieId) {
     const temporadasSalvas = obterTemporadasSalvasOrdenadas();
     if (temporadasSalvas.length === 0) return false;
@@ -137,6 +157,7 @@ function renderizarTemporadasSalvasNoModal(serieId) {
     if (label) label.innerText = `Nota da temporada ${temporadaAtiva}`;
 
     renderizarEpisodios(temporadaAtiva);
+    atualizarResumoProgressoSerie();
     return true;
 }
 
@@ -478,6 +499,7 @@ async function abrirModalSerie(serie) {
     document.getElementById("watchlist").checked = salvo?.watchlist || false;
     document.getElementById("categoriaFilme").value = salvo?.categoria || "Favorito";
     atualizarVisualCategoriaSelect();
+    atualizarDisponibilidadeReviewRapido();
 
     if (salvo?.temporadas) {
         salvo.temporadas.forEach(t => { temporadasModal[t.numero] = t; });
@@ -503,6 +525,7 @@ async function abrirModalSerie(serie) {
         renderizarAbasTemporadas(serie.id);
         const primeiraTemporada = temFallbackLocal ? temporadaAtiva : 1;
         await carregarTemporada(serie.id, primeiraTemporada);
+        atualizarResumoProgressoSerie();
     } catch (err) {
         const temporadasSalvas = obterTemporadasSalvasOrdenadas();
         totalTemporadas = temporadasSalvas.length || serie.number_of_seasons || 1;
@@ -513,6 +536,7 @@ async function abrirModalSerie(serie) {
             temporadaAtiva = temporadasSalvas[0].numero || 1;
             atualizarEstrelasTemporada(temporadasModal[temporadaAtiva]?.nota || 0);
             renderizarEpisodios(temporadaAtiva);
+            atualizarResumoProgressoSerie();
         } else {
             mostrarMensagemEpisodios("Nao foi possivel carregar as temporadas agora. Tente novamente em alguns instantes.", "erro");
             mostrarToast("Erro ao carregar temporadas.");
@@ -591,6 +615,7 @@ async function carregarTemporada(serieId, numero) {
             if (temporadaSalva?.episodios?.length) {
                 atualizarEstrelasTemporada(temporadaSalva.nota || 0);
                 renderizarEpisodios(numero);
+                atualizarResumoProgressoSerie();
                 mostrarToast(`Temporada ${numero} aberta com dados salvos.`);
                 return;
             }
@@ -623,12 +648,14 @@ async function carregarTemporada(serieId, numero) {
         if (label) label.innerText = `Nota da temporada ${numero}`;
 
         renderizarEpisodios(numero);
+        atualizarResumoProgressoSerie();
     } catch (err) {
         const temporadaSalva = temporadasModal[numero];
 
         if (temporadaSalva?.episodios?.length) {
             atualizarEstrelasTemporada(temporadaSalva.nota || 0);
             renderizarEpisodios(numero);
+            atualizarResumoProgressoSerie();
             mostrarToast(`Temporada ${numero} aberta com dados salvos.`);
             return;
         }
@@ -654,11 +681,16 @@ function renderizarEpisodios(numTemporada) {
     t.episodios.forEach(ep => {
         const row = document.createElement("div");
         row.classList.add("ep-row");
+        row.classList.toggle("is-watched", Boolean(ep.visto || (ep.nota || 0) > 0));
         row.innerHTML = `
             <div class="ep-info">
                 <span class="ep-num">E${ep.numero}</span>
                 <span class="ep-nome">${ep.nome || "Episódio " + ep.numero}</span>
             </div>
+            <label class="ep-watch">
+                <input type="checkbox" data-watch-toggle="${ep.numero}" ${ep.visto || (ep.nota || 0) > 0 ? "checked" : ""}>
+                Visto
+            </label>
             <div class="ep-stars" data-temporada="${numTemporada}" data-ep="${ep.numero}">
                 ${[1,2,3,4,5].map(i => `<span class="ep-star${i <= ep.nota ? ' active' : ''}" data-val="${i}">★</span>`).join("")}
             </div>
@@ -677,12 +709,20 @@ function renderizarEpisodios(numTemporada) {
             const aplicarNota = () => {
                 const val = Number(star.dataset.val);
                 const ep = temporadasModal[numT]?.episodios.find(e => e.numero === numEp);
-                if (ep) ep.nota = val;
+                if (ep) {
+                    ep.nota = val;
+                    ep.visto = true;
+                }
                 container.querySelectorAll(".ep-star").forEach(s => {
                     s.classList.toggle("active", Number(s.dataset.val) <= val);
                     s.setAttribute("aria-pressed", Number(s.dataset.val) <= val ? "true" : "false");
                 });
+                const row = container.closest(".ep-row");
+                row?.classList.add("is-watched");
+                const watchInput = row?.querySelector(`[data-watch-toggle="${numEp}"]`);
+                if (watchInput) watchInput.checked = true;
                 atualizarMediaTemporada(numT);
+                atualizarResumoProgressoSerie();
             };
 
             star.addEventListener("click", () => {
@@ -698,7 +738,19 @@ function renderizarEpisodios(numTemporada) {
         });
     });
 
+    lista.querySelectorAll("[data-watch-toggle]").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+            const epNumero = Number(checkbox.dataset.watchToggle);
+            const ep = temporadasModal[numTemporada]?.episodios?.find((item) => item.numero === epNumero);
+            if (!ep) return;
+            ep.visto = checkbox.checked;
+            checkbox.closest(".ep-row")?.classList.toggle("is-watched", checkbox.checked || (ep.nota || 0) > 0);
+            atualizarResumoProgressoSerie();
+        });
+    });
+
     atualizarMediaTemporada(numTemporada);
+    atualizarResumoProgressoSerie();
 }
 
 function atualizarMediaTemporada(numTemporada) {
@@ -732,6 +784,11 @@ document.getElementById("salvar").addEventListener("click", () => {
         categoria,
         watchlist,
         temporadas: obterTemporadasSalvasOrdenadas(),
+        totalTemporadas,
+        totalEpisodios: obterTemporadasSalvasOrdenadas().reduce((acc, temporada) => {
+            return acc + (Array.isArray(temporada.episodios) ? temporada.episodios.length : 0);
+        }, 0),
+        review: categoria === "Assistido" ? (filmesSalvos[index]?.review || null) : null
     };
 
     if (index >= 0) {
@@ -742,6 +799,10 @@ document.getElementById("salvar").addEventListener("click", () => {
 
     localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
     recarregarFilmesSalvos();
+    const conquestInfo = window.CineListState?.computeAchievements?.(filmesSalvos);
+    conquestInfo?.newlyUnlocked?.forEach((achievement) => {
+        mostrarToast(`Conquista desbloqueada: ${achievement.title}`);
+    });
     atualizarCards();
     if (typeof atualizarNavCounts === "function") atualizarNavCounts();
     mostrarToast("Série salva com sucesso!");
@@ -758,6 +819,40 @@ document.getElementById("salvar").addEventListener("click", () => {
         carregarSeriesSalvas();
     }
 });
+
+document.getElementById("abrirReviewRapido")?.addEventListener("click", () => {
+    if (!serieSelecionada) {
+        mostrarToast("Abra uma série antes de escrever a review.");
+        return;
+    }
+    if (!podeCriarReview(document.getElementById("categoriaFilme")?.value)) {
+        mostrarToast("A review só pode ser feita para títulos marcados como Assistido.");
+        return;
+    }
+
+    const atual = filmesSalvos.find((item) => item.id === serieSelecionada.id && item.tipo === "serie");
+    abrirReviewRapido({
+        item: { ...serieSelecionada, review: atual?.review },
+        onSave: (review) => {
+            filmesSalvos = JSON.parse(localStorage.getItem("filmes")) || [];
+            const index = filmesSalvos.findIndex((item) => item.id === serieSelecionada.id && item.tipo === "serie");
+            if (index < 0) {
+                mostrarToast("Salve a série antes de adicionar uma review.");
+                return;
+            }
+            if (filmesSalvos[index].categoria !== "Assistido") {
+                mostrarToast("A review só pode ser salva em títulos assistidos.");
+                return;
+            }
+            filmesSalvos[index].review = review;
+            localStorage.setItem("filmes", JSON.stringify(filmesSalvos));
+            mostrarToast("Review salva.");
+            carregarSeriesSalvas();
+        }
+    });
+});
+
+document.getElementById("categoriaFilme")?.addEventListener("change", () => atualizarDisponibilidadeReviewRapido());
 
 
 function atualizarCards() {
